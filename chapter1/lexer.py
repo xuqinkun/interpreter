@@ -62,6 +62,7 @@ class Lexer:
 
     def next_token(self):
         self.read()
+        self.skip_whitespace()
         ch = self.peek
         if ch == '=':
             tok = Token(ASSIGN, ch)
@@ -82,9 +83,32 @@ class Lexer:
         elif ch == NULL:
             tok = Token(EOF, ch)
         else:
-            tok = Token(ILLEGAL, ch)
+            if is_letter(self.peek):
+                ident = self.read_ident()
+                tok = Token(lookup_ident(ident), ident)
+            elif is_number(self.peek):
+                tok = Token(INT, ch)
+            else:
+                tok = Token(ILLEGAL, ch)
         return tok
+
+
+    def read_ident(self):
+        start = self.curr
+        while is_letter(self.peek):
+            self.read()
+        return self.code[start: self.curr]
+
+    def skip_whitespace(self):
+        while self.peek in ['\t', ' ', '\n']:
+            self.read()
 
 def get_lexer(code: str):
     lexer = Lexer(code)
     return lexer
+
+def is_letter(ch: str):
+    return 'a' <= ch <= 'z' or 'A' <= ch <= 'Z' or ch == '_'
+
+def is_number(ch: str):
+    return '0' <= ch <= '9'

@@ -4,7 +4,7 @@ class Token:
         self._val = val
 
     def __str__(self):
-        return f"Token(token_type={self.token_type}, val={self.val})"
+        return f"Token(token_type='{self.token_type}', val='{self.val}')"
 
     @property
     def token_type(self):
@@ -49,3 +49,11 @@ LET = "LET"
 
 # EOF的值
 NULL = '\0'
+
+keywords = {
+    'fn': FUNCTION,
+    'let': LET
+}
+
+def lookup_ident(ident: str):
+    return keywords.get(ident, IDENT)

@@ -21,12 +21,12 @@ def test_next_token_01():
               ]
 
     lexer = get_lexer(code)
-    for token in tokens:
-        tok = lexer.next_token()
-        if tok.token_type != token.token_type:
-            print(f'Wrong token_type expected:[{token.token_type}] got:[{tok.token_type}]')
-        if tok.val != token.val:
-            print(f'Wrong val expected:[{token.val}] got:[{tok.val}]')
+    for expected_token in tokens:
+        actual_token = lexer.next_token()
+        if actual_token.token_type != expected_token.token_type:
+            print(f'Wrong token_type expected:[{expected_token.token_type}] got:[{actual_token.token_type}]')
+        if actual_token.val != expected_token.val:
+            print(f'Wrong val expected:[{expected_token.val}] got:[{actual_token.val}]')
 
     print(f'Run {func_name} ok!\tTake: {timer.elapse()}')
 
@@ -41,24 +41,52 @@ def test_next_token_02():
     let result = add(five, ten);
     """
     tokens = [Token(LET, 'let'),
-              Token(PLUS, '+'),
+              Token(IDENT, 'five'),
+              Token(ASSIGN, '='),
+              Token(INT, '5'),
+              Token(SEMICOLON, ';'),
+              Token(LET, 'let'),
+              Token(IDENT, 'ten'),
+              Token(ASSIGN, '='),
+              Token(INT, '10'),
+              Token(SEMICOLON, ';'),
+              Token(LET, 'let'),
+              Token(IDENT, 'add'),
+              Token(ASSIGN, '='),
+              Token(FUNCTION, 'fn'),
               Token(LPAREN, '('),
+              Token(IDENT, 'x'),
+              Token(COMMA, ','),
+              Token(IDENT, 'y'),
               Token(RPAREN, ')'),
               Token(LBRACE, '{'),
+              Token(IDENT, 'x'),
+              Token(PLUS, '+'),
+              Token(IDENT, 'y'),
               Token(RBRACE, '}'),
-              Token(COMMA, ','),
               Token(SEMICOLON, ';'),
-              Token(EOF, ''),
+              Token(LET, 'let'),
+              Token(IDENT, 'result'),
+              Token(ASSIGN, '='),
+              Token(IDENT, 'add'),
+              Token(SEMICOLON, ';'),
+              Token(LPAREN, '('),
+              Token(IDENT, 'five'),
+              Token(COMMA, ','),
+              Token(IDENT, 'ten'),
+              Token(RPAREN, ')'),
+              Token(SEMICOLON, ';'),
+              Token(EOF, NULL),
               ]
 
     lexer = get_lexer(code)
-    for token in tokens:
-        tok = lexer.next_token()
-        if tok.token_type != token.token_type:
-            print(f'Wrong token_type expected:[{token.token_type}] got:[{tok.token_type}]')
-        if tok.val != token.val:
-            print(f'Wrong val expected:[{token.val}] got:[{tok.val}]')
+    for expected_token in tokens:
+        actual_token = lexer.next_token()
+        if actual_token.token_type != expected_token.token_type:
+            print(f'Wrong token_type expected:[{expected_token.token_type}] got:[{actual_token.token_type}]')
+        if actual_token.val != expected_token.val:
+            print(f'Wrong val expected:[{expected_token.val}] got:[{actual_token.val}]')
     print('Accepted!')
 
 if __name__ == '__main__':
-    test_next_token_01()
+    test_next_token_02()
