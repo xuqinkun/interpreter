@@ -24,7 +24,7 @@ class Token:
 
 
 ILLEGAL = "ILLEGAL"
-EOF = ""
+EOF = "EOF"
 
 # 标识符+字面量
 IDENT = "IDENT"
@@ -46,3 +46,6 @@ RBRACE = "}"
 # 关键字
 FUNCTION = "FUNCTION"
 LET = "LET"
+
+# EOF的值
+NULL = '\0'

@@ -54,7 +54,7 @@ class Lexer:
     def read(self):
         """读入下一个字符，并更新指针位置，如果超出文本长度，将peek置为"""
         if self.next >= len(self.code):
-            self.peek = EOF
+            self.peek = NULL
         else:
             self.peek = self.code[self.next]
         self.curr = self.next
@@ -79,7 +79,7 @@ class Lexer:
             tok = Token(LBRACE, ch)
         elif ch == '}':
             tok = Token(RBRACE, ch)
-        elif ch == EOF:
+        elif ch == NULL:
             tok = Token(EOF, ch)
         else:
             tok = Token(ILLEGAL, ch)

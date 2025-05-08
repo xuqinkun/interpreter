@@ -17,7 +17,7 @@ def test_next_token_01():
               Token(RBRACE, '}'),
               Token(COMMA, ','),
               Token(SEMICOLON, ';'),
-              Token(EOF, ''),
+              Token(EOF, NULL),
               ]
 
     lexer = get_lexer(code)
@@ -33,8 +33,14 @@ def test_next_token_01():
 
 def test_next_token_02():
     code = """
+    let five = 5;
+    let ten = 10;
+    let add = fn(x,y) {
+        x+y;
+    };
+    let result = add(five, ten);
     """
-    tokens = [Token(ASSIGN, '='),
+    tokens = [Token(LET, 'let'),
               Token(PLUS, '+'),
               Token(LPAREN, '('),
               Token(RPAREN, ')'),
