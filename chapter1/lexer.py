@@ -1,21 +1,21 @@
 from chapter1.tok import *
 
 class Lexer:
-    def __init__(self, text: str, curr: int=0, next: int=0, peek: str=''):
-        self.text = text
-        self.curr = curr
-        self.next = next
-        self.peek = peek
+    def __init__(self, code: str, curr: int=0, next: int=0, peek: str=''):
+        self._code = code
+        self._curr = curr
+        self._next = next
+        self._peek = peek
 
     @property
-    def text(self):
-        return self._text
+    def code(self):
+        return self._code
 
-    @text.setter
-    def text(self, text):
-        if not isinstance(text, str):
+    @code.setter
+    def code(self, code):
+        if not isinstance(code, str):
             raise ValueError("text must be a string")
-        self._text = text
+        self._code = code
 
     @property
     def curr(self):
@@ -53,10 +53,10 @@ class Lexer:
 
     def read(self):
         """读入下一个字符，并更新指针位置，如果超出文本长度，将peek置为"""
-        if self.next >= len(self.text):
+        if self.next >= len(self.code):
             self.peek = EOF
         else:
-            self.peek = self.text[self.next]
+            self.peek = self.code[self.next]
         self.curr = self.next
         self.next += 1
 
@@ -85,6 +85,6 @@ class Lexer:
             tok = Token(ILLEGAL, ch)
         return tok
 
-def get_lexer(text: str):
-    lexer = Lexer(text)
+def get_lexer(code: str):
+    lexer = Lexer(code)
     return lexer
