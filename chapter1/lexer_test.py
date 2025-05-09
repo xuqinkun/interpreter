@@ -5,6 +5,7 @@ from chapter1.lexer import get_lexer
 
 timer = Timer()
 
+
 def test_next_token_01():
     timer.start()
     func_name = inspect.currentframe().f_code.co_name
@@ -32,6 +33,8 @@ def test_next_token_01():
 
 
 def test_next_token_02():
+    timer.start()
+    func_name = inspect.currentframe().f_code.co_name
     code = """
     let five = 5;
     let ten = 10;
@@ -63,13 +66,13 @@ def test_next_token_02():
               Token(IDENT, 'x'),
               Token(PLUS, '+'),
               Token(IDENT, 'y'),
+              Token(SEMICOLON, ';'),
               Token(RBRACE, '}'),
               Token(SEMICOLON, ';'),
               Token(LET, 'let'),
               Token(IDENT, 'result'),
               Token(ASSIGN, '='),
               Token(IDENT, 'add'),
-              Token(SEMICOLON, ';'),
               Token(LPAREN, '('),
               Token(IDENT, 'five'),
               Token(COMMA, ','),
@@ -83,10 +86,11 @@ def test_next_token_02():
     for expected_token in tokens:
         actual_token = lexer.next_token()
         if actual_token.token_type != expected_token.token_type:
-            print(f'Wrong token_type expected:[{expected_token.token_type}] got:[{actual_token.token_type}]')
+            raise Exception(f'Wrong token_type expected:[{expected_token.token_type}] got:[{actual_token.token_type}]')
         if actual_token.val != expected_token.val:
-            print(f'Wrong val expected:[{expected_token.val}] got:[{actual_token.val}]')
-    print('Accepted!')
+            raise Exception(f'Wrong val expected:[{expected_token.val}] got:[{actual_token.val}]')
+    print(f'Run {func_name} ok!\tTake: {timer.elapse()}')
+
 
 if __name__ == '__main__':
     test_next_token_02()

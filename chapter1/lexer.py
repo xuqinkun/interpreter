@@ -1,10 +1,11 @@
 from chapter1.tok import *
 
+
 class Lexer:
-    def __init__(self, code: str, curr: int=0, next: int=0, peek: str=''):
+    def __init__(self, code: str, curr=-1, _next=0, peek=''):
         self._code = code
         self._curr = curr
-        self._next = next
+        self._next = _next
         self._peek = peek
 
     @property
@@ -51,7 +52,7 @@ class Lexer:
     def __str__(self):
         return f"Lexer(curr={self.curr}, next={self.next}, peek='{self.peek}')"
 
-    def read(self):
+    def read_char(self):
         """读入下一个字符，并更新指针位置，如果超出文本长度，将peek置为"""
         if self.next >= len(self.code):
             self.peek = NULL
@@ -61,7 +62,6 @@ class Lexer:
         self.next += 1
 
     def next_token(self):
-        self.read()
         self.skip_whitespace()
         ch = self.peek
         if ch == '=':
@@ -85,30 +85,41 @@ class Lexer:
         else:
             if is_letter(self.peek):
                 ident = self.read_ident()
-                tok = Token(lookup_ident(ident), ident)
-            elif is_number(self.peek):
-                tok = Token(INT, ch)
+                return Token(lookup_ident(ident), ident)
+            elif is_digit(self.peek):
+                return Token(INT, self.read_number())
             else:
                 tok = Token(ILLEGAL, ch)
+        self.read_char()
         return tok
-
 
     def read_ident(self):
         start = self.curr
         while is_letter(self.peek):
-            self.read()
+            self.read_char()
+        return self.code[start: self.curr]
+
+    def read_number(self):
+        start = self.curr
+        while is_digit(self.peek):
+            self.read_char()
+
         return self.code[start: self.curr]
 
     def skip_whitespace(self):
         while self.peek in ['\t', ' ', '\n']:
-            self.read()
+            self.read_char()
+
 
 def get_lexer(code: str):
     lexer = Lexer(code)
+    lexer.read_char()
     return lexer
+
 
 def is_letter(ch: str):
     return 'a' <= ch <= 'z' or 'A' <= ch <= 'Z' or ch == '_'
 
-def is_number(ch: str):
+
+def is_digit(ch: str):
     return '0' <= ch <= '9'

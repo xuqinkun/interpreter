@@ -36,7 +36,7 @@ PLUS = "+"
 
 # 分隔符
 COMMA = ","
-SEMICOLON = ":"
+SEMICOLON = ";"
 
 LPAREN = "("
 RPAREN = ")"
@@ -54,6 +54,7 @@ keywords = {
     'fn': FUNCTION,
     'let': LET
 }
+
 
 def lookup_ident(ident: str):
     return keywords.get(ident, IDENT)
