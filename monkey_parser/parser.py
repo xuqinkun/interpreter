@@ -1,24 +1,44 @@
-from typing import Optional
-
+from typing import Optional,Dict,Callable
+from enum import Enum
 from lexer.lexer import Lexer
 from monkey_ast.ast import (
     Program,
     Statement,
     LetStatement,
     ReturnStatement,
-    Identifier
+    ExpressionStatement,
+    Identifier,
+    Expression
 )
 from monkey_token.token import *
 from dataclasses import dataclass
 
+class Priority(Enum):
+    BLANK = 0
+    LOWEST = 1
+    EQUALS = 2       # ==
+    LESS_GREATER = 3 # > or <
+    SUM = 4          # +
+    PRODUCT = 5      # *
+    PREFIX = 6       # -X or !X
+    CALL = 7         # func(X)
+
 
 @dataclass
 class Parser:
+    # 定义函数类型别名
+    PrefixParseFn = Callable[['Parser'], Expression]
+    InfixParseFn = Callable[[Expression], Expression]
+
     lexer: Lexer
     line: int=0
     errors: list[str]=None
     curr: Token=''
     peek: Token=''
+    prefix_parse_fns: Dict[str, PrefixParseFn] = None
+    infix_parse_fns: Dict[str, InfixParseFn] = None
+
+
 
     def next_token(self):
         self.curr = self.peek
@@ -39,7 +59,8 @@ class Parser:
             return self.parse_let_statement()
         elif self.curr.token_type == RETURN:
             return self.parse_return_statement()
-        return None
+        else:
+            return self.parse_expression_statement()
 
     def parse_let_statement(self)->Optional[LetStatement]:
         stmt = LetStatement(self.curr)
@@ -60,11 +81,24 @@ class Parser:
             self.next_token()
         return stmt
 
+    def parse_expression_statement(self):
+        stmt = ExpressionStatement(token=self.curr)
+        stmt.expression = self.parse_expression(Priority.LOWEST)
+        if self.peek_token_is(SEMICOLON):
+            self.next_token()
+        return stmt
+
+    def parse_expression(self, priority):
+        prefix = self.prefix_parse_fns[self.curr.token_type]
+        if prefix is None:
+            return None
+        return prefix(self)
 
     def peek_error(self, token_type):
         if self.errors is None:
             self.errors = []
-        self.errors.append(f"line:{self.lexer.lino}: expected next token to be {token_type}, got {self.peek.token_type} instead")
+        err_msg = f"line:{self.lexer.lino}: expected next token to be {token_type}, got {self.peek.token_type} instead"
+        self.errors.append(err_msg)
 
     def curr_token_is(self, token_type: str):
         return self.curr.token_type == token_type
@@ -80,9 +114,22 @@ class Parser:
             self.peek_error(token_type)
             return False
 
+    def register_prefix(self, token_type: str, fn: PrefixParseFn):
+        """注册前缀解析函数"""
+        self.prefix_parse_fns[token_type] = fn
 
-def get_parser(lex: Lexer):
-    p = Parser(lex)
-    p.next_token()
-    p.next_token()
-    return p
+    def register_infix(self, token_type: str, fn: InfixParseFn):
+        """注册中缀解析函数"""
+        self.infix_parse_fns[token_type] = fn
+
+    @staticmethod
+    def get_parser(lex: Lexer):
+        p = Parser(lex)
+        p.prefix_parse_fns = {}
+        p.register_prefix(IDENT, parse_identifier)
+        p.next_token()
+        p.next_token()
+        return p
+
+def parse_identifier(p: Parser)->Expression:
+    return Identifier(token=p.curr, value=p.curr.literal)

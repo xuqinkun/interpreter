@@ -14,10 +14,18 @@ class Statement(Node):
     def statement(self):
         pass
 
+    @abstractmethod
+    def string(self):
+        pass
+
 class Expression(Node):
 
     @abstractmethod
     def expression(self):
+        pass
+
+    @abstractmethod
+    def string(self):
         pass
 
 @dataclass
@@ -30,8 +38,14 @@ class Program:
         else:
             return ""
 
+    def string(self):
+        s = []
+        for stmt in self.statements:
+            s.append(stmt.string())
+        return "".join(s)
+
 @dataclass
-class Identifier:
+class Identifier(Expression):
     token: Token
     value: str
 
@@ -40,6 +54,12 @@ class Identifier:
 
     def __repr__(self):
         return f"Identifier=(token={self.token}, value={self.value})"
+
+    def string(self):
+        return self.value
+
+    def expression(self):
+        pass
 
 
 @dataclass
@@ -51,13 +71,47 @@ class LetStatement(Statement):
     def literal(self):
         return self.token.literal
 
+    def statement(self):
+        pass
+
     def __repr__(self):
         return f"LetStatement(token='{self.token}', name='{self.name}', value={self.value})"
 
-@dataclass()
+    def string(self):
+        return f"{self.literal()} {self.name.string()} = {'' if self.value is None else self.value.string()};"
+
+
+@dataclass
 class ReturnStatement(Statement):
     token: Token=None
     return_value: Expression=None
 
     def literal(self):
         return self.token.literal
+
+    def statement(self):
+        pass
+
+    def __repr__(self):
+        return f"LetStatement(token='{self.token}', return_value='{self.return_value}')"
+
+    def string(self):
+        return f"{self.literal()} {'' if self.return_value is None else self.return_value};"
+
+
+@dataclass
+class ExpressionStatement(Statement):
+    token: Token=None
+    expression: Expression=None
+
+    def literal(self):
+        return self.token.literal
+
+    def statement(self):
+        pass
+
+    def __repr__(self):
+        return f"LetStatement(token='{self.token}', expression='{self.expression}')"
+
+    def string(self):
+        return "" if self.expression is None else self.expression.string()

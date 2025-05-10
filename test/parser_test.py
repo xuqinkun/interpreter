@@ -1,6 +1,6 @@
 from monkey_ast.ast import *
 from lexer import lexer
-from monkey_parser.parser import Parser,get_parser
+from monkey_parser.parser import Parser
 
 def check_parser_errors(p: Parser):
     errors = p.errors
@@ -11,22 +11,24 @@ def check_parser_errors(p: Parser):
         print(f'parse error:{err}')
     return True
 
+def check_len(expected_len:int, actual_len:int):
+    if expected_len != actual_len:
+        raise Exception(f"Wrong statements number, expected {expected_len} got {actual_len}")
+
 def test_let_statements():
     code = """
     let x  5;let  = 10;
     let  = 838 383;
     """
     l = lexer.get_lexer(code)
-    p = get_parser(l)
+    p = Parser.get_parser(l)
     program = p.parse_program()
     if check_parser_errors(p):
         print(f'FAILED')
         return False
     if program is None:
         raise Exception("ParseProgram return None")
-    n = len(program.statements)
-    if n != 3:
-        raise Exception(f"Wrong statements number, expected 3 got {n}")
+    check_len(3, len(program.statements))
     expected_idents = ["x", "y", "foobar"]
     for i, ident in enumerate(expected_idents):
         stmt = program.statements[i]
@@ -59,12 +61,10 @@ def test_return_statement():
     return 993 322;
     """
     l = lexer.get_lexer(code)
-    p = get_parser(l)
+    p = Parser.get_parser(l)
     program = p.parse_program()
     check_parser_errors(p)
-    n = len(program.statements)
-    if n != 3:
-        raise Exception(f"Wrong statements number, expected 3 got {n}")
+    check_len(3, len(program.statements))
     for stmt in program.statements:
         if not isinstance(stmt, ReturnStatement):
             print(f"stmt not ReturnStatement, got={type(stmt)}")
@@ -74,9 +74,34 @@ def test_return_statement():
             print(f'return_stmt.literal not return, got{return_stmt.literal()}')
     return True
 
+def test_identifier_expression():
+    code = 'foobar;'
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    check_len(1, len(program.statements))
+    stmt = program.statements[0]
+    if not isinstance(stmt, ExpressionStatement):
+        print(f'stmt is not a ExpressionStatement got a {type(stmt)}')
+        return False
+    exp = ExpressionStatement(token=stmt.token, expression=stmt.expression)
+    if not isinstance(exp.expression, Identifier):
+        print(f'exp is not a Identifier got a {type(exp)}')
+        return False
+    ident = Identifier(token=exp.token, value=exp.literal())
+    if ident.value != 'foobar':
+        raise Exception(f'ident.value is not foobar, got {ident.value}')
+    if ident.literal() != 'foobar':
+        raise Exception(f'ident.literal is not foobar, got {ident.literal()}')
+    return True
+
+
 
 if __name__ == '__main__':
-    if test_let_statements():
-        print('test_let_statements accepted!')
-    if test_return_statement():
+    # if test_let_statements():
+    #     print('test_let_statements accepted!')
+    # if test_return_statement():
+    #     print('test_return_statement accepted!')
+    if test_identifier_expression():
         print('test_return_statement accepted!')
