@@ -1,53 +1,14 @@
 from monkey_token.token import *
+from dataclasses import dataclass
 
 
+@dataclass
 class Lexer:
-    def __init__(self, code: str, curr=-1, _next=0, peek=''):
-        self._code = code
-        self._curr = curr
-        self._next = _next
-        self._ch = peek
-
-    @property
-    def code(self):
-        return self._code
-
-    @code.setter
-    def code(self, code):
-        if not isinstance(code, str):
-            raise ValueError("text must be a string")
-        self._code = code
-
-    @property
-    def curr(self):
-        """当前读"""
-        return self._curr
-
-    @curr.setter
-    def curr(self, curr):
-        if not isinstance(curr, int):
-            raise ValueError("curr must be a int")
-        self._curr = curr
-
-    @property
-    def next(self):
-        """向前看一个字符"""
-        return self._next
-
-    @next.setter
-    def next(self, _next):
-        if not isinstance(_next, int):
-            raise ValueError("next must be a int")
-        self._next = _next
-
-    @property
-    def ch(self):
-        """当前正在查看的字符"""
-        return self._ch
-
-    @ch.setter
-    def ch(self, ch):
-        self._ch = ch
+    code: str
+    ch: str=''
+    curr: int=-1
+    next: int=0
+    lino: int=0
 
     def __str__(self):
         return f"Lexer(curr={self.curr}, next={self.next}, peek='{self.ch}')"
@@ -134,6 +95,8 @@ class Lexer:
 
     def skip_whitespace(self):
         while self.ch in ['\t', ' ', '\n']:
+            if self.ch == '\n':
+                self.lino += 1
             self.read_char()
 
 

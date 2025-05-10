@@ -1,16 +1,23 @@
 from monkey_ast.ast import Statement, LetStatement
 from lexer import lexer
-from monkey_parser import parser
+from monkey_parser.parser import Parser,get_parser
+
+def check_parser_errors(p: Parser):
+    errors = p.errors
+    if errors is None:
+        return False
+    print(f'parser has {len(errors)} errors')
+    for err in errors:
+        print(f'parse error:{err}')
+    return True
 
 def test_let_statements():
-    code = """
-    let x = 5;
-    let y = 10;
-    let foobar = 838383;
-    """
     l = lexer.get_lexer(code)
-    p = parser.get_parser(l)
+    p = get_parser(l)
     program = p.parse_program()
+    if check_parser_errors(p):
+        print(f'FAILED')
+        return False
     if program is None:
         raise Exception("ParseProgram return None")
     n = len(program.statements)
@@ -42,5 +49,9 @@ def check_let_statements(stmt: Statement, name: str):
 
 
 if __name__ == '__main__':
+    code = """
+        let x  5;let  = 10;
+        let  = 838 383;
+        """
     if test_let_statements():
         print('All cases accepted!')

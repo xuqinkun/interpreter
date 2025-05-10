@@ -14,6 +14,8 @@ from dataclasses import dataclass
 @dataclass
 class Parser:
     lexer: Lexer
+    line: int=0
+    errors: list[str]=None
     curr: Token=''
     peek: Token=''
 
@@ -48,6 +50,11 @@ class Parser:
             self.next_token()
         return stmt
 
+    def peek_error(self, token_type):
+        if self.errors is None:
+            self.errors = []
+        self.errors.append(f"line:{self.lexer.lino}: expected next token to be {token_type}, got {self.peek.token_type} instead")
+
     def curr_token_is(self, token_type: str):
         return self.curr.token_type == token_type
 
@@ -59,6 +66,7 @@ class Parser:
             self.next_token()
             return True
         else:
+            self.peek_error(token_type)
             return False
 
 
