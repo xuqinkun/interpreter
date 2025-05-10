@@ -43,7 +43,7 @@ class Identifier:
 
 
 @dataclass
-class LetStatement:
+class LetStatement(Statement):
     token: Token
     name: Identifier=None
     value: Expression=None
@@ -53,3 +53,11 @@ class LetStatement:
 
     def __repr__(self):
         return f"LetStatement(token='{self.token}', name='{self.name}', value={self.value})"
+
+@dataclass()
+class ReturnStatement(Statement):
+    token: Token=None
+    return_value: Expression=None
+
+    def literal(self):
+        return self.token.literal

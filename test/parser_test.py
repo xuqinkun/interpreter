@@ -1,4 +1,4 @@
-from monkey_ast.ast import Statement, LetStatement
+from monkey_ast.ast import *
 from lexer import lexer
 from monkey_parser.parser import Parser,get_parser
 
@@ -12,6 +12,10 @@ def check_parser_errors(p: Parser):
     return True
 
 def test_let_statements():
+    code = """
+    let x  5;let  = 10;
+    let  = 838 383;
+    """
     l = lexer.get_lexer(code)
     p = get_parser(l)
     program = p.parse_program()
@@ -48,10 +52,31 @@ def check_let_statements(stmt: Statement, name: str):
     return True
 
 
-if __name__ == '__main__':
+def test_return_statement():
     code = """
-        let x  5;let  = 10;
-        let  = 838 383;
-        """
+    return 5;
+    return 10;
+    return 993 322;
+    """
+    l = lexer.get_lexer(code)
+    p = get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    n = len(program.statements)
+    if n != 3:
+        raise Exception(f"Wrong statements number, expected 3 got {n}")
+    for stmt in program.statements:
+        if not isinstance(stmt, ReturnStatement):
+            print(f"stmt not ReturnStatement, got={type(stmt)}")
+            continue
+        return_stmt = ReturnStatement(stmt.token)
+        if return_stmt.literal() != 'return':
+            print(f'return_stmt.literal not return, got{return_stmt.literal()}')
+    return True
+
+
+if __name__ == '__main__':
     if test_let_statements():
-        print('All cases accepted!')
+        print('test_let_statements accepted!')
+    if test_return_statement():
+        print('test_return_statement accepted!')

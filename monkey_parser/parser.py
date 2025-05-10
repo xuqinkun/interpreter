@@ -5,6 +5,7 @@ from monkey_ast.ast import (
     Program,
     Statement,
     LetStatement,
+    ReturnStatement,
     Identifier
 )
 from monkey_token.token import *
@@ -36,6 +37,8 @@ class Parser:
     def parse_statement(self)->Optional[Statement]:
         if self.curr.token_type == LET:
             return self.parse_let_statement()
+        elif self.curr.token_type == RETURN:
+            return self.parse_return_statement()
         return None
 
     def parse_let_statement(self)->Optional[LetStatement]:
@@ -49,6 +52,14 @@ class Parser:
         while not self.curr_token_is(SEMICOLON):
             self.next_token()
         return stmt
+
+    def parse_return_statement(self):
+        stmt = ReturnStatement(self.curr)
+        self.next_token()
+        while not self.curr_token_is(SEMICOLON):
+            self.next_token()
+        return stmt
+
 
     def peek_error(self, token_type):
         if self.errors is None:
