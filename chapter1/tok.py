@@ -43,6 +43,21 @@ RPAREN = ")"
 LBRACE = "{"
 RBRACE = "}"
 
+BANG = "!"
+MINUS = "-"
+SLASH = "/"
+ASTERISK = "*"
+LT = "<"
+GT = ">"
+IF = "if"
+RETURN = "return"
+TRUE = "true"
+ELSE = "else"
+FALSE = "false"
+EQ = "=="
+NOT_EQ = "!="
+
+
 # 关键字
 FUNCTION = "FUNCTION"
 LET = "LET"
@@ -52,7 +67,12 @@ NULL = '\0'
 
 keywords = {
     'fn': FUNCTION,
-    'let': LET
+    'let': LET,
+    'if': IF,
+    'return': RETURN,
+    'true':TRUE,
+    'false':FALSE,
+    'else':ELSE,
 }
 
 

@@ -6,7 +6,7 @@ class Lexer:
         self._code = code
         self._curr = curr
         self._next = _next
-        self._peek = peek
+        self._ch = peek
 
     @property
     def code(self):
@@ -41,31 +41,41 @@ class Lexer:
         self._next = _next
 
     @property
-    def peek(self):
+    def ch(self):
         """当前正在查看的字符"""
-        return self._peek
+        return self._ch
 
-    @peek.setter
-    def peek(self, peek):
-        self._peek = peek
+    @ch.setter
+    def ch(self, ch):
+        self._ch = ch
 
     def __str__(self):
-        return f"Lexer(curr={self.curr}, next={self.next}, peek='{self.peek}')"
+        return f"Lexer(curr={self.curr}, next={self.next}, peek='{self.ch}')"
 
     def read_char(self):
         """读入下一个字符，并更新指针位置，如果超出文本长度，将peek置为"""
         if self.next >= len(self.code):
-            self.peek = NULL
+            self.ch = NULL
         else:
-            self.peek = self.code[self.next]
+            self.ch = self.code[self.next]
         self.curr = self.next
         self.next += 1
 
+    def peek(self):
+        if self.next >= len(self.code):
+            return NULL
+        else:
+            return self.code[self.next]
+
     def next_token(self):
         self.skip_whitespace()
-        ch = self.peek
+        ch = self.ch
         if ch == '=':
-            tok = Token(ASSIGN, ch)
+            if self.peek() == '=':
+                self.read_char()
+                tok = Token(EQ, ch + self.ch)
+            else:
+                tok = Token(ASSIGN, ch)
         elif ch == ';':
             tok = Token(SEMICOLON, ch)
         elif ch == '(':
@@ -76,6 +86,22 @@ class Lexer:
             tok = Token(COMMA, ch)
         elif ch == '+':
             tok = Token(PLUS, ch)
+        elif ch == '-':
+            tok = Token(MINUS, ch)
+        elif ch == '!':
+            if self.peek() == '=':
+                self.read_char()
+                tok = Token(NOT_EQ, ch + self.ch)
+            else:
+                tok = Token(BANG, ch)
+        elif ch == '/':
+            tok = Token(SLASH, ch)
+        elif ch == '*':
+            tok = Token(ASTERISK, ch)
+        elif ch == '<':
+            tok = Token(LT, ch)
+        elif ch == '>':
+            tok = Token(GT, ch)
         elif ch == '{':
             tok = Token(LBRACE, ch)
         elif ch == '}':
@@ -83,10 +109,10 @@ class Lexer:
         elif ch == NULL:
             tok = Token(EOF, ch)
         else:
-            if is_letter(self.peek):
+            if is_letter(self.ch):
                 ident = self.read_ident()
                 return Token(lookup_ident(ident), ident)
-            elif is_digit(self.peek):
+            elif is_digit(self.ch):
                 return Token(INT, self.read_number())
             else:
                 tok = Token(ILLEGAL, ch)
@@ -95,19 +121,19 @@ class Lexer:
 
     def read_ident(self):
         start = self.curr
-        while is_letter(self.peek):
+        while is_letter(self.ch):
             self.read_char()
         return self.code[start: self.curr]
 
     def read_number(self):
         start = self.curr
-        while is_digit(self.peek):
+        while is_digit(self.ch):
             self.read_char()
 
         return self.code[start: self.curr]
 
     def skip_whitespace(self):
-        while self.peek in ['\t', ' ', '\n']:
+        while self.ch in ['\t', ' ', '\n']:
             self.read_char()
 
 
