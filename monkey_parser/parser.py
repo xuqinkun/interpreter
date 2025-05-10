@@ -8,7 +8,7 @@ from monkey_ast.ast import (
     ReturnStatement,
     ExpressionStatement,
     Identifier,
-    Expression
+    Expression, IntegerLiteral
 )
 from monkey_token.token import *
 from dataclasses import dataclass
@@ -37,8 +37,6 @@ class Parser:
     peek: Token=''
     prefix_parse_fns: Dict[str, PrefixParseFn] = None
     infix_parse_fns: Dict[str, InfixParseFn] = None
-
-
 
     def next_token(self):
         self.curr = self.peek
@@ -127,9 +125,19 @@ class Parser:
         p = Parser(lex)
         p.prefix_parse_fns = {}
         p.register_prefix(IDENT, parse_identifier)
+        p.register_prefix(INT, parse_integer_literal)
         p.next_token()
         p.next_token()
         return p
 
-def parse_identifier(p: Parser)->Expression:
+def parse_identifier(p: Parser)->Optional[Expression]:
     return Identifier(token=p.curr, value=p.curr.literal)
+
+def parse_integer_literal(p: Parser)->Expression:
+    lit = IntegerLiteral(token=p.curr)
+    literal = lit.literal()
+    if not literal.isdigit():
+        p.errors.append(f'Could not parse {literal} as integer')
+        return None
+    lit.value = int(literal)
+    return lit

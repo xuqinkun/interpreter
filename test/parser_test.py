@@ -15,6 +15,10 @@ def check_len(expected_len:int, actual_len:int):
     if expected_len != actual_len:
         raise Exception(f"Wrong statements number, expected {expected_len} got {actual_len}")
 
+def check_type(expected_type: type, obj: object):
+    if not isinstance(obj, expected_type):
+        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
+
 def test_let_statements():
     code = """
     let x  5;let  = 10;
@@ -23,9 +27,7 @@ def test_let_statements():
     l = lexer.get_lexer(code)
     p = Parser.get_parser(l)
     program = p.parse_program()
-    if check_parser_errors(p):
-        print(f'FAILED')
-        return False
+    check_parser_errors(p)
     if program is None:
         raise Exception("ParseProgram return None")
     check_len(3, len(program.statements))
@@ -82,13 +84,9 @@ def test_identifier_expression():
     check_parser_errors(p)
     check_len(1, len(program.statements))
     stmt = program.statements[0]
-    if not isinstance(stmt, ExpressionStatement):
-        print(f'stmt is not a ExpressionStatement got a {type(stmt)}')
-        return False
+    check_type(ExpressionStatement, stmt)
     exp = ExpressionStatement(token=stmt.token, expression=stmt.expression)
-    if not isinstance(exp.expression, Identifier):
-        print(f'exp is not a Identifier got a {type(exp)}')
-        return False
+    check_type(Identifier, exp.expression)
     ident = Identifier(token=exp.token, value=exp.literal())
     if ident.value != 'foobar':
         raise Exception(f'ident.value is not foobar, got {ident.value}')
@@ -97,11 +95,30 @@ def test_identifier_expression():
     return True
 
 
+def test_integer_literal_expression():
+    code = "51;"
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    check_len(1, len(program.statements))
+    stmt = program.statements[0]
+    check_type(ExpressionStatement, stmt)
+    exp = ExpressionStatement(token=stmt.token, expression=stmt.expression)
+    check_type(IntegerLiteral, exp.expression)
+    literal = IntegerLiteral(token=exp.token, value=exp.expression.value)
+    if literal.value != 51:
+        raise Exception(f"literal.value expected: {51}, got: {literal.value}")
+    if literal.literal() != "51":
+        raise Exception(f"literal.literal expected: '51', got: '{literal.literal()}'")
+    return True
 
 if __name__ == '__main__':
     # if test_let_statements():
     #     print('test_let_statements accepted!')
-    # if test_return_statement():
-    #     print('test_return_statement accepted!')
+    if test_return_statement():
+        print('test_return_statement accepted!')
     if test_identifier_expression():
         print('test_return_statement accepted!')
+    if test_integer_literal_expression():
+        print('test_integer_literal_expression accepted!')

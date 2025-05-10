@@ -19,6 +19,7 @@ class Statement(Node):
         pass
 
 class Expression(Node):
+    value=None
 
     @abstractmethod
     def expression(self):
@@ -108,10 +109,24 @@ class ExpressionStatement(Statement):
         return self.token.literal
 
     def statement(self):
-        pass
+        return self.expression.literal()
 
     def __repr__(self):
         return f"LetStatement(token='{self.token}', expression='{self.expression}')"
 
     def string(self):
         return "" if self.expression is None else self.expression.string()
+
+@dataclass
+class IntegerLiteral(Expression):
+    token: Token=None
+    value: int=0
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        return self.token.literal
