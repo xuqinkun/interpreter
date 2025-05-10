@@ -1,10 +1,10 @@
 class Token:
     def __init__(self, token_type: str='', val: str=''):
         self._token_type = token_type
-        self._val = val
+        self._literal = val
 
-    def __str__(self):
-        return f"Token(token_type='{self.token_type}', val='{self.val}')"
+    def __repr__(self):
+        return f"Token(token_type='{self.token_type}', val='{self.literal}')"
 
     @property
     def token_type(self):
@@ -15,12 +15,12 @@ class Token:
         self._token_type = token_type
 
     @property
-    def val(self):
-        return self._val
+    def literal(self):
+        return self._literal
 
-    @val.setter
-    def val(self, val):
-        self._val = val
+    @literal.setter
+    def literal(self, literal):
+        self._literal = literal
 
 
 ILLEGAL = "ILLEGAL"

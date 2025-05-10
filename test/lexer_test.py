@@ -1,7 +1,7 @@
 import inspect
-from chapter1.tok import *
+from monkey_token.token import *
 from util.timer import Timer
-from chapter1.lexer import get_lexer, Lexer
+from lexer.lexer import get_lexer, Lexer
 
 timer = Timer()
 
@@ -10,8 +10,8 @@ def check(tokens:[], lexer: Lexer):
         actual_token = lexer.next_token()
         if actual_token.token_type != expected_token.token_type:
             raise Exception(f'Wrong token_type expected:[{i}]={expected_token.token_type} got:[{actual_token.token_type}]')
-        if actual_token.val != expected_token.val:
-            raise Exception(f'Wrong val expected:[{i}]={expected_token.val} got:[{actual_token.val}]')
+        if actual_token.literal != expected_token.literal:
+            raise Exception(f'Wrong val expected:[{i}]={expected_token.literal} got:[{actual_token.literal}]')
 
 
 def test_next_token_01():
@@ -191,4 +191,6 @@ if (5 < 10) {
     print(f'Run {func_name} ok!\tTake: {timer.elapse()}')
 
 if __name__ == '__main__':
+    test_next_token_01()
+    test_next_token_02()
     test_next_token_03()

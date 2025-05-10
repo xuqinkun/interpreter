@@ -1,4 +1,4 @@
-from chapter1.tok import *
+from monkey_token.token import *
 
 
 class Lexer:
