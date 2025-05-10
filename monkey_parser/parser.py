@@ -8,7 +8,9 @@ from monkey_ast.ast import (
     ReturnStatement,
     ExpressionStatement,
     Identifier,
-    Expression, IntegerLiteral
+    Expression,
+    IntegerLiteral,
+    PrefixExpression,
 )
 from monkey_token.token import *
 from dataclasses import dataclass
@@ -27,7 +29,7 @@ class Priority(Enum):
 @dataclass
 class Parser:
     # 定义函数类型别名
-    PrefixParseFn = Callable[['Parser'], Expression]
+    PrefixParseFn = Callable[[], Expression]
     InfixParseFn = Callable[[Expression], Expression]
 
     lexer: Lexer
@@ -87,16 +89,23 @@ class Parser:
         return stmt
 
     def parse_expression(self, priority):
-        prefix = self.prefix_parse_fns[self.curr.token_type]
+        token_type = self.curr.token_type
+        prefix = self.prefix_parse_fns.get(token_type, None)
         if prefix is None:
+            err_msg = f"no prefix parse function for '{token_type}' found"
+            self.append_error(err_msg)
             return None
-        return prefix(self)
+        return prefix()
 
-    def peek_error(self, token_type):
+    def append_error(self, err_msg: str):
         if self.errors is None:
             self.errors = []
-        err_msg = f"line:{self.lexer.lino}: expected next token to be {token_type}, got {self.peek.token_type} instead"
         self.errors.append(err_msg)
+
+
+    def peek_error(self, token_type):
+        err_msg = f"line:{self.lexer.lino}: expected next token to be {token_type}, got {self.peek.token_type} instead"
+        self.append_error(err_msg)
 
     def curr_token_is(self, token_type: str):
         return self.curr.token_type == token_type
@@ -120,24 +129,33 @@ class Parser:
         """注册中缀解析函数"""
         self.infix_parse_fns[token_type] = fn
 
+    def parse_identifier(self) -> Optional[Expression]:
+        return Identifier(token=self.curr, value=self.curr.literal)
+
+    def parse_integer_literal(self) -> Optional[Expression]:
+        lit = IntegerLiteral(token=self.curr)
+        literal = lit.literal()
+        if not literal.isdigit():
+            self.append_error(f'Could not parse {literal} as integer')
+            return None
+        lit.value = int(literal)
+        return lit
+
+    def parse_prefix_expression(self):
+        exp = PrefixExpression(token=self.curr, operator=self.curr.literal)
+        self.next_token()
+        exp.right = self.parse_expression(Priority.PREFIX)
+        return exp
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser(lex)
+        p.errors = []
         p.prefix_parse_fns = {}
-        p.register_prefix(IDENT, parse_identifier)
-        p.register_prefix(INT, parse_integer_literal)
+        p.register_prefix(IDENT, p.parse_identifier)
+        p.register_prefix(INT, p.parse_integer_literal)
+        p.register_prefix(BANG, p.parse_prefix_expression)
+        p.register_prefix(MINUS, p.parse_prefix_expression)
         p.next_token()
         p.next_token()
         return p
-
-def parse_identifier(p: Parser)->Optional[Expression]:
-    return Identifier(token=p.curr, value=p.curr.literal)
-
-def parse_integer_literal(p: Parser)->Expression:
-    lit = IntegerLiteral(token=p.curr)
-    literal = lit.literal()
-    if not literal.isdigit():
-        p.errors.append(f'Could not parse {literal} as integer')
-        return None
-    lit.value = int(literal)
-    return lit

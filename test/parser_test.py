@@ -4,7 +4,7 @@ from monkey_parser.parser import Parser
 
 def check_parser_errors(p: Parser):
     errors = p.errors
-    if errors is None:
+    if not errors:
         return False
     print(f'parser has {len(errors)} errors')
     for err in errors:
@@ -15,9 +15,9 @@ def check_len(expected_len:int, actual_len:int):
     if expected_len != actual_len:
         raise Exception(f"Wrong statements number, expected {expected_len} got {actual_len}")
 
-def check_type(expected_type: type, obj: object):
-    if not isinstance(obj, expected_type):
-        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
+def check_type(expected_type: type, stmt: object):
+    if not isinstance(stmt, expected_type):
+        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(stmt)}")
 
 def test_let_statements():
     code = """
@@ -104,13 +104,43 @@ def test_integer_literal_expression():
     check_len(1, len(program.statements))
     stmt = program.statements[0]
     check_type(ExpressionStatement, stmt)
-    exp = ExpressionStatement(token=stmt.token, expression=stmt.expression)
+    exp = ExpressionStatement.copy(stmt)
     check_type(IntegerLiteral, exp.expression)
     literal = IntegerLiteral(token=exp.token, value=exp.expression.value)
     if literal.value != 51:
         raise Exception(f"literal.value expected: {51}, got: {literal.value}")
     if literal.literal() != "51":
         raise Exception(f"literal.literal expected: '51', got: '{literal.literal()}'")
+    return True
+
+def test_parsing_prefix_expressions():
+    codes = [("!5;", "!", 5), ("-15;", "-", 15)]
+    for code in codes:
+        l = lexer.get_lexer(code[0])
+        p = Parser.get_parser(l)
+        program = p.parse_program()
+        check_parser_errors(p)
+        check_len(1, len(program.statements))
+        statement = program.statements[0]
+        check_type(ExpressionStatement, statement)
+        stmt = ExpressionStatement(token=statement.token, expression=statement.expression)
+        check_type(PrefixExpression, stmt.expression)
+        exp = PrefixExpression.copy(stmt.expression)
+        if exp.operator != code[1]:
+            raise Exception(f"exp.operator is not '{code[1]}'. got {exp.operator}")
+        if not test_integer_literal(exp.right, code[2]):
+            return False
+    return True
+
+def test_integer_literal(exp: Expression, value: int):
+    check_type(IntegerLiteral, exp)
+    intl = IntegerLiteral(exp.token, exp.value)
+    if intl.value != value:
+        print(f'intl.value not {value}. got {intl.value}')
+        return False
+    if intl.literal() != f'{value}':
+        print(f'intl.literal not {value}. got {intl.literal()}')
+        return False
     return True
 
 if __name__ == '__main__':
@@ -122,3 +152,5 @@ if __name__ == '__main__':
         print('test_return_statement accepted!')
     if test_integer_literal_expression():
         print('test_integer_literal_expression accepted!')
+    if test_parsing_prefix_expressions():
+        print('test_parsing_prefix_expressions accepted!')

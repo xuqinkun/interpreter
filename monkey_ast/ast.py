@@ -9,6 +9,9 @@ class Node:
         pass
 
 class Statement(Node):
+    token=None
+    expression=None
+
 
     @abstractmethod
     def statement(self):
@@ -19,7 +22,10 @@ class Statement(Node):
         pass
 
 class Expression(Node):
+    token=None
     value=None
+    operator=None
+    right=None
 
     @abstractmethod
     def expression(self):
@@ -112,10 +118,14 @@ class ExpressionStatement(Statement):
         return self.expression.literal()
 
     def __repr__(self):
-        return f"LetStatement(token='{self.token}', expression='{self.expression}')"
+        return f"ExpressionStatement(token='{self.token}', expression='{self.expression}')"
 
     def string(self):
         return "" if self.expression is None else self.expression.string()
+
+    @classmethod
+    def copy(cls, stmt: Statement):
+        return cls(stmt.token, stmt.expression)
 
 @dataclass
 class IntegerLiteral(Expression):
@@ -130,3 +140,22 @@ class IntegerLiteral(Expression):
 
     def string(self):
         return self.token.literal
+
+@dataclass
+class PrefixExpression(Expression):
+    token: Token=None
+    operator: str=None
+    right: Expression=None
+
+    @classmethod
+    def copy(cls, exp: Expression)->'PrefixExpression':
+        return cls(exp.token, exp.operator, exp.right)
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        return f"({self.operator}{self.right.string()})"
