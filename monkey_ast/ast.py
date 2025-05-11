@@ -222,3 +222,47 @@ class Boolean(Expression):
 
     def __repr__(self):
         return self.string()
+
+
+@dataclass
+class BlockStatement(Statement):
+    token: Token=None
+    statements: list[Statement]=None
+
+    def statement(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        lines = []
+        for stmt in self.statements:
+            lines.append(stmt.string())
+        return "".join(lines)
+
+@dataclass
+class IFExpression(Expression):
+    token: Token=None
+    condition: Expression=None
+    consequence: BlockStatement=None
+    alternative: BlockStatement=None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        condition = self.condition.string()
+        consequence = self.consequence.string()
+        stem = f"if {condition} {consequence}"
+        if self.alternative is None:
+            return stem
+        else:
+            return f"{stem} else {self.alternative.string()}"
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.condition, exp.consequence, exp.alternative)

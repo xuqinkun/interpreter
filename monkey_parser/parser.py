@@ -89,12 +89,12 @@ class Parser:
 
     def parse_expression_statement(self):
         stmt = ExpressionStatement(token=self.curr)
-        stmt.expression = self.parse_expression(Precedence.LOWEST.value)
+        stmt.expression = self.parse_expression(Precedence.LOWEST)
         if self.peek_token_is(SEMICOLON):
             self.next_token()
         return stmt
 
-    def parse_expression(self, precedence: int):
+    def parse_expression(self, precedence: Precedence):
         token_type = self.curr.token_type
         prefix = self.prefix_parse_fns.get(token_type, None)
         if prefix is None:
@@ -102,7 +102,7 @@ class Parser:
             self.append_error(err_msg)
             return None
         left_exp = prefix()
-        while not self.peek_token_is(SEMICOLON) and precedence < self.peek_precedence():
+        while not self.peek_token_is(SEMICOLON) and precedence.value < self.peek_precedence().value:
             infix = self.infix_parse_fns.get(self.peek.token_type, None)
             if infix is None:
                 return left_exp
@@ -134,10 +134,10 @@ class Parser:
             return False
 
     def peek_precedence(self):
-        return precedences.get(self.peek.token_type, Precedence.LOWEST).value
+        return precedences.get(self.peek.token_type, Precedence.LOWEST)
 
     def curr_precedence(self):
-        return precedences.get(self.curr.token_type, Precedence.LOWEST).value
+        return precedences.get(self.curr.token_type, Precedence.LOWEST)
 
     def register_prefix(self, token_type: str, fn: PrefixParseFn):
         """注册前缀解析函数"""
@@ -162,7 +162,7 @@ class Parser:
     def parse_prefix_expression(self):
         exp = PrefixExpression(token=self.curr, operator=self.curr.literal)
         self.next_token()
-        exp.right = self.parse_expression(Precedence.PREFIX.value)
+        exp.right = self.parse_expression(Precedence.PREFIX)
         return exp
 
     def parse_infix_expression(self, left: Expression):
@@ -179,10 +179,39 @@ class Parser:
 
     def parse_grouped_expression(self):
         self.next_token()
-        exp = self.parse_expression(Precedence.LOWEST.value)
+        exp = self.parse_expression(Precedence.LOWEST)
         if not self.expect_peek(RPAREN):
             return None
         return exp
+
+    def parse_if_expression(self):
+        exp = IFExpression(token=self.curr)
+        if not self.expect_peek(LPAREN):
+            return None
+        self.next_token()
+        exp.condition = self.parse_expression(Precedence.LOWEST)
+        if not self.expect_peek(RPAREN):
+            return None
+        if not self.expect_peek(LBRACE):
+            return None
+        exp.consequence = self.parse_block_statement()
+        if self.peek_token_is(ELSE):
+            self.next_token()
+            if not self.expect_peek(LBRACE):
+                return None
+            exp.alternative = self.parse_block_statement()
+        return exp
+
+    def parse_block_statement(self):
+        block = BlockStatement(token=self.curr)
+        block.statements = []
+        self.next_token()
+        while not self.curr_token_is(RBRACE) and not self.curr_token_is(EOF):
+            stmt = self.parse_statement()
+            if stmt is not None:
+                block.statements.append(stmt)
+            self.next_token()
+        return block
 
     @staticmethod
     def get_parser(lex: Lexer):
@@ -190,21 +219,30 @@ class Parser:
         p.errors = []
         p.prefix_parse_fns = {}
         p.infix_parse_fns = {}
+        # IDENT
         p.register_prefix(IDENT, p.parse_identifier)
+        # ()
         p.register_prefix(LPAREN, p.parse_grouped_expression)
+        # Integer
         p.register_prefix(INT, p.parse_integer_literal)
+        # Boolean
         p.register_prefix(TRUE, p.parse_bool_literal)
         p.register_prefix(FALSE, p.parse_bool_literal)
+        # !
         p.register_prefix(BANG, p.parse_prefix_expression)
+        # +-*/
         p.register_prefix(MINUS, p.parse_prefix_expression)
         p.register_infix(PLUS, p.parse_infix_expression)
         p.register_infix(MINUS, p.parse_infix_expression)
         p.register_infix(SLASH, p.parse_infix_expression)
         p.register_infix(ASTERISK, p.parse_infix_expression)
+        # =,!=,<,>
         p.register_infix(EQ, p.parse_infix_expression)
         p.register_infix(NOT_EQ, p.parse_infix_expression)
         p.register_infix(LT, p.parse_infix_expression)
         p.register_infix(GT, p.parse_infix_expression)
+        # IF
+        p.register_prefix(IF, p.parse_if_expression)
         p.next_token()
         p.next_token()
         return p

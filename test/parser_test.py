@@ -23,8 +23,8 @@ def check_type(expected_type: type, obj: object):
 
 def test_let_statements():
     code = """
-    let x  5;let  = 10;
-    let  = 838 383;
+    let x = 5;let y = 10;
+    let foobar = 838 383;
     """
     l = lexer.get_lexer(code)
     p = Parser.get_parser(l)
@@ -324,21 +324,74 @@ def test_boolean_expression(exp: Expression, value: bool):
         return False
     return True
 
+def test_if_expression():
+    code = "if (x < y) {x}"
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    check_len(1, len(program.statements))
+    check_type(ExpressionStatement, program.statements[0])
+    stmt = ExpressionStatement.copy(program.statements[0])
+    check_type(IFExpression, stmt.expression)
+    exp = IFExpression.copy(stmt.expression)
+    if not test_infix_expression(exp.condition, "x", "<", "y"):
+        return False
+    statements = exp.consequence.statements
+    check_len(1, len(statements))
+    check_type(ExpressionStatement, statements[0])
+    consequence = ExpressionStatement.copy(statements[0])
+    if not test_identifier(consequence.expression, "x"):
+        return False
+    if exp.alternative is not None:
+        raise Exception(f"exp.alternative statements was not none. got{exp.alternative}")
+    return True
 
+
+def test_if_else_expression():
+    code = "if (x < y) {x} else {y}"
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    check_len(1, len(program.statements))
+    check_type(ExpressionStatement, program.statements[0])
+    stmt = ExpressionStatement.copy(program.statements[0])
+    check_type(IFExpression, stmt.expression)
+    exp = IFExpression.copy(stmt.expression)
+    if not test_infix_expression(exp.condition, "x", "<", "y"):
+        return False
+    statements = exp.consequence.statements
+    check_len(1, len(statements))
+    check_type(ExpressionStatement, statements[0])
+    consequence = ExpressionStatement.copy(statements[0])
+    if not test_identifier(consequence.expression, "x"):
+        return False
+    alternative = exp.alternative
+    check_len(1, len(alternative.statements))
+    check_type(ExpressionStatement, alternative.statements[0])
+    alter = ExpressionStatement.copy(alternative.statements[0])
+    if not test_identifier(alter.expression, "y"):
+        return False
+    return True
 
 
 if __name__ == '__main__':
-    # if test_let_statements():
-    #     print('test_let_statements accepted!')
+    if test_let_statements():
+        print('test_let_statements passed!')
     if test_return_statement():
-        print('test_return_statement accepted!')
+        print('test_return_statement passed!')
     if test_identifier_expression():
-        print('test_return_statement accepted!')
+        print('test_identifier_expression passed!')
     if test_integer_literal_expression():
-        print('test_integer_literal_expression accepted!')
+        print('test_integer_literal_expression passed!')
     if test_parsing_prefix_expressions():
-        print('test_parsing_prefix_expressions accepted!')
+        print('test_parsing_prefix_expressions passed!')
     if test_parsing_infix_expressions():
-        print('test_parsing_infix_expressions accepted!')
+        print('test_parsing_infix_expressions passed!')
     if test_operator_precedence_parsing():
-        print('test_operator_precedence_parsing accepted!')
+        print('test_operator_precedence_parsing passed!')
+    if test_if_expression():
+        print('test_if_expression passed!')
+    if test_if_else_expression():
+        print('test_if_else_expression passed!')
