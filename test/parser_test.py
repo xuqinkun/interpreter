@@ -1,5 +1,3 @@
-from smtpd import program
-
 from monkey_ast.ast import *
 from lexer import lexer
 from monkey_parser.parser import Parser
@@ -20,16 +18,21 @@ def check_len(expected_len:int, actual_len:int):
 def check_type(expected_type: type, obj: object):
     if not isinstance(obj, expected_type):
         raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
+    return expected_type.copy(obj)
+
+def parse(code):
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    return program
 
 def test_let_statements():
     code = """
     let x = 5;let y = 10;
     let foobar = 838 383;
     """
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
+    program = parse(code)
     if program is None:
         raise Exception("ParseProgram return None")
     check_len(3, len(program.statements))
@@ -64,10 +67,7 @@ def test_return_statement():
     return 10;
     return 993 322;
     """
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
+    program = parse(code)
     check_len(3, len(program.statements))
     for stmt in program.statements:
         if not isinstance(stmt, ReturnStatement):
@@ -80,16 +80,11 @@ def test_return_statement():
 
 def test_identifier_expression():
     code = 'foobar;'
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
+    program = parse(code)
     check_len(1, len(program.statements))
     stmt = program.statements[0]
-    check_type(ExpressionStatement, stmt)
-    exp = ExpressionStatement(token=stmt.token, expression=stmt.expression)
-    check_type(Identifier, exp.expression)
-    ident = Identifier(token=exp.token, value=exp.literal())
+    exp = check_type(ExpressionStatement, stmt)
+    ident = check_type(Identifier, exp.expression)
     if ident.value != 'foobar':
         raise Exception(f'ident.value is not foobar, got {ident.value}')
     if ident.literal() != 'foobar':
@@ -99,16 +94,11 @@ def test_identifier_expression():
 
 def test_integer_literal_expression():
     code = "51;"
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
+    program = parse(code)
     check_len(1, len(program.statements))
     stmt = program.statements[0]
-    check_type(ExpressionStatement, stmt)
-    exp = ExpressionStatement.copy(stmt)
-    check_type(IntegerLiteral, exp.expression)
-    literal = IntegerLiteral(token=exp.token, value=exp.expression.value)
+    exp = check_type(ExpressionStatement, stmt)
+    literal = check_type(IntegerLiteral, exp.expression)
     if literal.value != 51:
         raise Exception(f"literal.value expected: {51}, got: {literal.value}")
     if literal.literal() != "51":
@@ -118,16 +108,10 @@ def test_integer_literal_expression():
 def test_parsing_prefix_expressions():
     codes = [("!5;", "!", 5), ("-15;", "-", 15)]
     for code in codes:
-        l = lexer.get_lexer(code[0])
-        p = Parser.get_parser(l)
-        program = p.parse_program()
-        check_parser_errors(p)
+        program = parse(code[0])
         check_len(1, len(program.statements))
-        statement = program.statements[0]
-        check_type(ExpressionStatement, statement)
-        stmt = ExpressionStatement(token=statement.token, expression=statement.expression)
-        check_type(PrefixExpression, stmt.expression)
-        exp = PrefixExpression.copy(stmt.expression)
+        stmt = check_type(ExpressionStatement, program.statements[0])
+        exp = check_type(PrefixExpression, stmt.expression)
         if exp.operator != code[1]:
             raise Exception(f"exp.operator is not '{code[1]}'. got {exp.operator}")
         if not test_integer_literal(exp.right, code[2]):
@@ -135,8 +119,7 @@ def test_parsing_prefix_expressions():
     return True
 
 def test_integer_literal(exp: Expression, value: int):
-    check_type(IntegerLiteral, exp)
-    intl = IntegerLiteral(exp.token, exp.value)
+    intl = check_type(IntegerLiteral, exp)
     if intl.value != value:
         print(f'intl.value not {value}. got {intl.value}')
         return False
@@ -160,23 +143,13 @@ def test_parsing_infix_expressions():
         ("false == false;", False, "==", False),
     ]
     for code in  codes:
-        l = lexer.get_lexer(code[0])
-        p = Parser.get_parser(l)
-        program = p.parse_program()
-        check_parser_errors(p)
+        program = parse(code[0])
         check_len(1, len(program.statements))
         statement = program.statements[0]
         check_type(ExpressionStatement, statement)
         stmt = ExpressionStatement.copy(statement)
         check_type(InfixExpression, stmt.expression)
         exp = InfixExpression.copy(exp=stmt.expression)
-        # if not test_integer_literal(exp.left, code[1]):
-        #     return False
-        # op = code[2]
-        # if exp.operator != op:
-        #     return f"Operator not match, expected:{op} got: {exp.operator}"
-        # if not test_integer_literal(exp.right, code[3]):
-        #     return False
         test_infix_expression(exp, code[1], code[2], code[3])
     return True
 
@@ -268,18 +241,14 @@ def test_operator_precedence_parsing():
         ),
     ]
     for code in codes:
-        l = lexer.get_lexer(code[0])
-        p = Parser.get_parser(l)
-        program = p.parse_program()
-        check_parser_errors(p)
+        program = parse(code[0])
         actual = program.string()
         if actual != code[1]:
             print(f"expected: {code[1]} got: {actual}")
 
 
 def test_identifier(exp: Expression, value: str):
-    check_type(Identifier, exp)
-    ident = Identifier.copy(exp)
+    ident = check_type(Identifier, exp)
     if ident.value != value:
         print(f'ident.value not {value}. got {ident.value}')
         return False
@@ -302,8 +271,7 @@ def test_literal_expression(exp: Expression, expected: object):
 
 def test_infix_expression(exp: Expression, left: object,
                           operator: str, right: object):
-    check_type(InfixExpression, exp)
-    op_exp = InfixExpression.copy(exp)
+    op_exp = check_type(InfixExpression, exp)
     if not test_literal_expression(op_exp.left, left):
         return False
     if op_exp.operator != operator:
@@ -326,21 +294,15 @@ def test_boolean_expression(exp: Expression, value: bool):
 
 def test_if_expression():
     code = "if (x < y) {x}"
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
+    program = parse(code)
     check_len(1, len(program.statements))
-    check_type(ExpressionStatement, program.statements[0])
-    stmt = ExpressionStatement.copy(program.statements[0])
-    check_type(IFExpression, stmt.expression)
-    exp = IFExpression.copy(stmt.expression)
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    exp = check_type(IFExpression, stmt.expression)
     if not test_infix_expression(exp.condition, "x", "<", "y"):
         return False
     statements = exp.consequence.statements
     check_len(1, len(statements))
-    check_type(ExpressionStatement, statements[0])
-    consequence = ExpressionStatement.copy(statements[0])
+    consequence = check_type(ExpressionStatement, statements[0])
     if not test_identifier(consequence.expression, "x"):
         return False
     if exp.alternative is not None:
@@ -350,31 +312,63 @@ def test_if_expression():
 
 def test_if_else_expression():
     code = "if (x < y) {x} else {y}"
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
+    program = parse(code)
     check_len(1, len(program.statements))
-    check_type(ExpressionStatement, program.statements[0])
-    stmt = ExpressionStatement.copy(program.statements[0])
-    check_type(IFExpression, stmt.expression)
-    exp = IFExpression.copy(stmt.expression)
+
+    stmt = check_type(ExpressionStatement, program.statements[0])
+
+    exp = check_type(IFExpression, stmt.expression)
     if not test_infix_expression(exp.condition, "x", "<", "y"):
         return False
     statements = exp.consequence.statements
     check_len(1, len(statements))
-    check_type(ExpressionStatement, statements[0])
-    consequence = ExpressionStatement.copy(statements[0])
+
+    consequence = check_type(ExpressionStatement, statements[0])
     if not test_identifier(consequence.expression, "x"):
         return False
     alternative = exp.alternative
     check_len(1, len(alternative.statements))
-    check_type(ExpressionStatement, alternative.statements[0])
-    alter = ExpressionStatement.copy(alternative.statements[0])
+
+    alter = check_type(ExpressionStatement, alternative.statements[0])
     if not test_identifier(alter.expression, "y"):
         return False
     return True
 
+
+def test_function_literal_parsing():
+    code = 'fn(x, y) { x + y;}'
+    program = parse(code)
+    check_len(1, len(program.statements))
+
+    stmt = check_type(ExpressionStatement, program.statements[0])
+
+    func = check_type(FunctionLiteral, stmt.expression)
+    check_len(2, len(func.parameters))
+    test_literal_expression(func.parameters[0], "x")
+    test_literal_expression(func.parameters[1], "y")
+    check_len(1, len(func.body.statements))
+
+    body_stmt = check_type(ExpressionStatement, func.body.statements[0])
+    if not test_infix_expression(body_stmt.expression, "x", "+", "y"):
+        return False
+    return True
+
+
+def test_function_parameter_parsing():
+    codes = [
+        ("fn() {};", []),
+        ("fn(x) {};", ["x"]),
+        ("fn(x, y, z) {};", ["x", "y", "z"]),
+    ]
+    for code in codes:
+        program = parse(code[0])
+        stmt = check_type(ExpressionStatement, program.statements[0])
+        func = check_type(FunctionLiteral, stmt.expression)
+        check_len(len(code[1]), len(func.parameters))
+        for param, ident in zip(func.parameters, code[1]):
+            if not test_literal_expression(param, ident):
+                return False
+    return True
 
 if __name__ == '__main__':
     if test_let_statements():
@@ -395,3 +389,7 @@ if __name__ == '__main__':
         print('test_if_expression passed!')
     if test_if_else_expression():
         print('test_if_else_expression passed!')
+    if test_function_literal_parsing():
+        print('test_function_literal_parsing passed!')
+    if test_function_parameter_parsing():
+        print('test_function_parameter_parsing passed!')

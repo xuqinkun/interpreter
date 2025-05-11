@@ -213,6 +213,31 @@ class Parser:
             self.next_token()
         return block
 
+    def parse_function_literal(self):
+        lit = FunctionLiteral(self.curr)
+        if not self.expect_peek(LPAREN):
+            return None
+        lit.parameters = self.parse_function_parameters()
+        if not self.expect_peek(LBRACE):
+            return None
+        lit.body = self.parse_block_statement()
+        return lit
+
+    def parse_function_parameters(self):
+        identifiers = []
+        if self.peek_token_is(RPAREN):
+            self.next_token()
+            return identifiers
+        self.next_token()
+        identifiers.append(Identifier(self.curr, self.curr.literal))
+        while self.peek_token_is(COMMA):
+            self.next_token()
+            self.next_token()
+            identifiers.append(Identifier(self.curr, self.curr.literal))
+        if not self.expect_peek(RPAREN):
+            return None
+        return identifiers
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser(lex)
@@ -241,8 +266,11 @@ class Parser:
         p.register_infix(NOT_EQ, p.parse_infix_expression)
         p.register_infix(LT, p.parse_infix_expression)
         p.register_infix(GT, p.parse_infix_expression)
-        # IF
+        # if
         p.register_prefix(IF, p.parse_if_expression)
+        # function
+        p.register_prefix(FUNCTION, p.parse_function_literal)
+        # 将curr指向第一个token
         p.next_token()
         p.next_token()
         return p

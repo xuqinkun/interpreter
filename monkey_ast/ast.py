@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from dataclasses import dataclass
+
 from monkey_token.token import Token
+
 
 class Node:
 
@@ -8,10 +10,10 @@ class Node:
     def literal(self) -> str:
         pass
 
-class Statement(Node):
-    token=None
-    expression=None
 
+class Statement(Node):
+    token = None
+    expression = None
 
     @abstractmethod
     def statement(self):
@@ -24,12 +26,13 @@ class Statement(Node):
     def __repr__(self):
         return self.string()
 
+
 class Expression(Node):
-    token=None
-    value=None
-    operator=None
-    left=None
-    right=None
+    token = None
+    value = None
+    operator = None
+    left = None
+    right = None
 
     @abstractmethod
     def expression(self):
@@ -41,6 +44,7 @@ class Expression(Node):
 
     def __repr__(self):
         return self.string()
+
 
 @dataclass
 class Program:
@@ -57,6 +61,7 @@ class Program:
         for stmt in self.statements:
             s.append(stmt.string())
         return "".join(s)
+
 
 @dataclass
 class Identifier(Expression):
@@ -83,8 +88,8 @@ class Identifier(Expression):
 @dataclass
 class LetStatement(Statement):
     token: Token
-    name: Identifier=None
-    value: Expression=None
+    name: Identifier = None
+    value: Expression = None
 
     def literal(self):
         return self.token.literal
@@ -101,8 +106,8 @@ class LetStatement(Statement):
 
 @dataclass
 class ReturnStatement(Statement):
-    token: Token=None
-    return_value: Expression=None
+    token: Token = None
+    return_value: Expression = None
 
     def literal(self):
         return self.token.literal
@@ -119,8 +124,8 @@ class ReturnStatement(Statement):
 
 @dataclass
 class ExpressionStatement(Statement):
-    token: Token=None
-    expression: Expression=None
+    token: Token = None
+    expression: Expression = None
 
     def literal(self):
         return self.token.literal
@@ -140,10 +145,11 @@ class ExpressionStatement(Statement):
             return self.token.literal
         return self.string()
 
+
 @dataclass
 class IntegerLiteral(Expression):
-    token: Token=None
-    value: int=0
+    token: Token = None
+    value: int = 0
 
     def expression(self):
         pass
@@ -157,14 +163,19 @@ class IntegerLiteral(Expression):
     def __repr__(self):
         return str(self.value)
 
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.value)
+
+
 @dataclass
 class PrefixExpression(Expression):
-    token: Token=None
-    operator: str=None
-    right: Expression=None
+    token: Token = None
+    operator: str = None
+    right: Expression = None
 
     @classmethod
-    def copy(cls, exp: Expression)->'PrefixExpression':
+    def copy(cls, exp: Expression) -> 'PrefixExpression':
         return cls(exp.token, exp.operator, exp.right)
 
     def expression(self):
@@ -183,13 +194,13 @@ class PrefixExpression(Expression):
 
 @dataclass
 class InfixExpression(Expression):
-    token: Token=None
-    operator: str=None
-    left: Expression=None
-    right: Expression=None
+    token: Token = None
+    operator: str = None
+    left: Expression = None
+    right: Expression = None
 
     @classmethod
-    def copy(cls, exp: Expression)->'InfixExpression':
+    def copy(cls, exp: Expression) -> 'InfixExpression':
         return cls(exp.token, operator=exp.operator, left=exp.left, right=exp.right)
 
     def literal(self) -> str:
@@ -205,6 +216,7 @@ class InfixExpression(Expression):
 
     def __repr__(self):
         return self.string()
+
 
 @dataclass
 class Boolean(Expression):
@@ -223,11 +235,15 @@ class Boolean(Expression):
     def __repr__(self):
         return self.string()
 
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.value)
+
 
 @dataclass
 class BlockStatement(Statement):
-    token: Token=None
-    statements: list[Statement]=None
+    token: Token = None
+    statements: list[Statement] = None
 
     def statement(self):
         pass
@@ -241,12 +257,13 @@ class BlockStatement(Statement):
             lines.append(stmt.string())
         return "".join(lines)
 
+
 @dataclass
 class IFExpression(Expression):
-    token: Token=None
-    condition: Expression=None
-    consequence: BlockStatement=None
-    alternative: BlockStatement=None
+    token: Token = None
+    condition: Expression = None
+    consequence: BlockStatement = None
+    alternative: BlockStatement = None
 
     def expression(self):
         pass
@@ -266,3 +283,27 @@ class IFExpression(Expression):
     @classmethod
     def copy(cls, exp: Expression):
         return cls(exp.token, exp.condition, exp.consequence, exp.alternative)
+
+
+@dataclass
+class FunctionLiteral(Expression):
+    token: Token = None
+    parameters: list[Identifier] = None
+    body: BlockStatement = None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        params = []
+        for p in self.parameters:
+            params.append(p.string())
+        param = ','.join(params)
+        return f"{self.token.literal}({param}) {self.body.string()}"
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.parameters, exp.body)
