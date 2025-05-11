@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Callable
 
+from prompt_toolkit.styles import Priority
+
 from lexer.lexer import Lexer
 from monkey_ast.ast import *
 from monkey_token.token import *
@@ -87,12 +89,12 @@ class Parser:
 
     def parse_expression_statement(self):
         stmt = ExpressionStatement(token=self.curr)
-        stmt.expression = self.parse_expression(Precedence.LOWEST)
+        stmt.expression = self.parse_expression(Precedence.LOWEST.value)
         if self.peek_token_is(SEMICOLON):
             self.next_token()
         return stmt
 
-    def parse_expression(self, precedence: Precedence):
+    def parse_expression(self, precedence: int):
         token_type = self.curr.token_type
         prefix = self.prefix_parse_fns.get(token_type, None)
         if prefix is None:
@@ -100,7 +102,7 @@ class Parser:
             self.append_error(err_msg)
             return None
         left_exp = prefix()
-        while not self.peek_token_is(SEMICOLON) and precedence.value < self.peek_precedence().value:
+        while not self.peek_token_is(SEMICOLON) and precedence < self.peek_precedence():
             infix = self.infix_parse_fns.get(self.peek.token_type, None)
             if infix is None:
                 return left_exp
@@ -132,10 +134,10 @@ class Parser:
             return False
 
     def peek_precedence(self):
-        return precedences.get(self.peek.token_type, Precedence.LOWEST)
+        return precedences.get(self.peek.token_type, Precedence.LOWEST).value
 
     def curr_precedence(self):
-        return precedences.get(self.curr.token_type, Precedence.LOWEST)
+        return precedences.get(self.curr.token_type, Precedence.LOWEST).value
 
     def register_prefix(self, token_type: str, fn: PrefixParseFn):
         """注册前缀解析函数"""
@@ -160,7 +162,7 @@ class Parser:
     def parse_prefix_expression(self):
         exp = PrefixExpression(token=self.curr, operator=self.curr.literal)
         self.next_token()
-        exp.right = self.parse_expression(Precedence.PREFIX)
+        exp.right = self.parse_expression(Precedence.PREFIX.value)
         return exp
 
     def parse_infix_expression(self, left: Expression):
@@ -175,6 +177,13 @@ class Parser:
     def parse_bool_literal(self)->Expression:
         return Boolean(self.curr, self.curr_token_is(TRUE))
 
+    def parse_grouped_expression(self):
+        self.next_token()
+        exp = self.parse_expression(Precedence.LOWEST.value)
+        if not self.expect_peek(RPAREN):
+            return None
+        return exp
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser(lex)
@@ -182,6 +191,7 @@ class Parser:
         p.prefix_parse_fns = {}
         p.infix_parse_fns = {}
         p.register_prefix(IDENT, p.parse_identifier)
+        p.register_prefix(LPAREN, p.parse_grouped_expression)
         p.register_prefix(INT, p.parse_integer_literal)
         p.register_prefix(TRUE, p.parse_bool_literal)
         p.register_prefix(FALSE, p.parse_bool_literal)

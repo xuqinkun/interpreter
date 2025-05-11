@@ -21,6 +21,9 @@ class Statement(Node):
     def string(self):
         pass
 
+    def __repr__(self):
+        return self.string()
+
 class Expression(Node):
     token=None
     value=None
@@ -35,6 +38,9 @@ class Expression(Node):
     @abstractmethod
     def string(self):
         pass
+
+    def __repr__(self):
+        return self.string()
 
 @dataclass
 class Program:
@@ -61,7 +67,7 @@ class Identifier(Expression):
         return self.token.literal
 
     def __repr__(self):
-        return f"Identifier=(token={self.token}, value={self.value})"
+        return self.string()
 
     def string(self):
         return self.value
@@ -87,7 +93,7 @@ class LetStatement(Statement):
         pass
 
     def __repr__(self):
-        return f"LetStatement(token='{self.token}', name='{self.name}', value={self.value})"
+        return self.string()
 
     def string(self):
         return f"{self.literal()} {self.name.string()} = {'' if self.value is None else self.value.string()};"
@@ -105,7 +111,7 @@ class ReturnStatement(Statement):
         pass
 
     def __repr__(self):
-        return f"LetStatement(token='{self.token}', return_value='{self.return_value}')"
+        return self.string()
 
     def string(self):
         return f"{self.literal()} {'' if self.return_value is None else self.return_value};"
@@ -122,15 +128,17 @@ class ExpressionStatement(Statement):
     def statement(self):
         return self.expression.literal()
 
-    def __repr__(self):
-        return f"ExpressionStatement(token='{self.token}', expression='{self.expression}')"
-
     def string(self):
         return "" if self.expression is None else self.expression.string()
 
     @classmethod
     def copy(cls, stmt: Statement):
         return cls(stmt.token, stmt.expression)
+
+    def __repr__(self):
+        if self.expression is None:
+            return self.token.literal
+        return self.string()
 
 @dataclass
 class IntegerLiteral(Expression):
@@ -144,7 +152,10 @@ class IntegerLiteral(Expression):
         return self.token.literal
 
     def string(self):
-        return self.token.literal
+        return str(self.value)
+
+    def __repr__(self):
+        return str(self.value)
 
 @dataclass
 class PrefixExpression(Expression):
@@ -163,7 +174,11 @@ class PrefixExpression(Expression):
         return self.token.literal
 
     def string(self):
-        return f"({self.operator}{self.right.string()})"
+        right = "" if self.right is None else self.right.string()
+        return f"({self.operator}{right})"
+
+    def __repr__(self):
+        return self.string()
 
 
 @dataclass
@@ -181,10 +196,15 @@ class InfixExpression(Expression):
         return self.token.literal
 
     def string(self):
-        return f"({self.left.string()} {self.operator} {self.right.string()})"
+        left = "" if self.left is None else self.left.string()
+        right = "" if self.right is None else self.right.string()
+        return f"({left} {self.operator} {right})"
 
     def expression(self):
         pass
+
+    def __repr__(self):
+        return self.string()
 
 @dataclass
 class Boolean(Expression):
@@ -199,3 +219,6 @@ class Boolean(Expression):
 
     def string(self):
         return self.token.literal
+
+    def __repr__(self):
+        return self.string()

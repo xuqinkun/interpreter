@@ -246,6 +246,26 @@ def test_operator_precedence_parsing():
             "3 < 5 == true",
             "((3 < 5) == true)",
         ),
+        (
+            "1 + (2 + 3) + 4",
+            "((1 + (2 + 3)) + 4)",
+        ),
+        (
+            "(5 + 5) * 2",
+            "((5 + 5) * 2)",
+        ),
+        (
+            "2 / (5 + 5)",
+            "(2 / (5 + 5))",
+        ),
+        (
+            "-(5 + 5)",
+            "(-(5 + 5))",
+        ),
+        (
+            "!(true == true)",
+            "(!(true == true))",
+        ),
     ]
     for code in codes:
         l = lexer.get_lexer(code[0])
