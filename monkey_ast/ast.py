@@ -103,8 +103,12 @@ class LetStatement(Statement):
         return self.string()
 
     def string(self):
-        return f"{self.literal()} {self.name.string()} = {'' if self.value is None else self.value.string()};"
+        exp = '' if self.expression is None else self.expression.string()
+        return f"{self.literal()} {self.name.string()} = {exp};"
 
+    @classmethod
+    def copy(cls, stmt: Statement):
+        return cls(stmt.token, stmt.name, stmt.value)
 
 @dataclass
 class ReturnStatement(Statement):

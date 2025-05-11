@@ -82,15 +82,17 @@ class Parser:
         stmt.name = Identifier(self.curr, self.curr.literal)
         if not self.expect_peek(ASSIGN):
             return None
-        # 跳过对表达式的处理，直到遇见分号
-        while not self.curr_token_is(SEMICOLON):
+        self.next_token()
+        stmt.value = self.parse_expression(Precedence.LOWEST)
+        if self.peek_token_is(SEMICOLON):
             self.next_token()
         return stmt
 
     def parse_return_statement(self):
         stmt = ReturnStatement(self.curr)
         self.next_token()
-        while not self.curr_token_is(SEMICOLON):
+        stmt.return_value = self.parse_expression(Precedence.LOWEST)
+        if self.peek_token_is(SEMICOLON):
             self.next_token()
         return stmt
 

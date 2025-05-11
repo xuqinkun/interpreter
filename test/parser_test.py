@@ -32,21 +32,35 @@ def parse(code):
     return program
 
 def test_let_statements():
-    code = """
-    let x = 5;let y = 10;
-    let foobar = 838 383;
-    """
-    program = parse(code)
-    if program is None:
-        raise Exception("ParseProgram return None")
-    check_len(3, program.statements)
-    expected_idents = ["x", "y", "foobar"]
-    for i, ident in enumerate(expected_idents):
-        stmt = program.statements[i]
-        if not check_let_statements(stmt, ident):
+    codes = [
+        ("let x = 5;", "x", 5),
+        ("let y = true;", "y", True),
+        ("let foobar = y;", "foobar", "y"),
+    ]
+    for code in codes:
+        program = parse(code[0])
+        check_len(1, program.statements)
+        stmt = program.statements[0]
+        if not test_let_statement(stmt, code[1]):
+            return False
+        let = check_type(LetStatement, stmt)
+        if not test_literal_expression(let.value, code[2]):
             return False
     return True
 
+
+def test_let_statement(s: Statement, name: str):
+    if s.literal() != 'let':
+        print(f's.literal not "let" got {s.literal()}')
+        return False
+    let_stmt = check_type(LetStatement, s)
+    if let_stmt.name.value != name:
+        print(f'let_stmt.name.value not "{name}" got {let_stmt.name.value}')
+        return False
+    if let_stmt.name.literal() != name:
+        print(f'let_stmt.name.literal not "{name}" got {let_stmt.name.literal}')
+        return False
+    return True
 
 def check_let_statements(stmt: Statement, name: str):
     if stmt.literal() != "let":
@@ -69,7 +83,7 @@ def test_return_statement():
     code = """
     return 5;
     return 10;
-    return 993 322;
+    return 993322;
     """
     program = parse(code)
     check_len(3, program.statements)
