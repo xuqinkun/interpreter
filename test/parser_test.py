@@ -155,6 +155,9 @@ def test_parsing_infix_expressions():
         ("5 < 5;", 5, "<", 5),
         ("5 == 5;", 5, "==", 5),
         ("5 != 5;", 5, "!=", 5),
+        ("true == true;", True, "==", True),
+        ("true != false;", True, "!=", False),
+        ("false == false;", False, "==", False),
     ]
     for code in  codes:
         l = lexer.get_lexer(code[0])
@@ -167,13 +170,14 @@ def test_parsing_infix_expressions():
         stmt = ExpressionStatement.copy(statement)
         check_type(InfixExpression, stmt.expression)
         exp = InfixExpression.copy(exp=stmt.expression)
-        if not test_integer_literal(exp.left, code[1]):
-            return False
-        op = code[2]
-        if exp.operator != op:
-            return f"Operator not match, expected:{op} got: {exp.operator}"
-        if not test_integer_literal(exp.right, code[3]):
-            return False
+        # if not test_integer_literal(exp.left, code[1]):
+        #     return False
+        # op = code[2]
+        # if exp.operator != op:
+        #     return f"Operator not match, expected:{op} got: {exp.operator}"
+        # if not test_integer_literal(exp.right, code[3]):
+        #     return False
+        test_infix_expression(exp, code[1], code[2], code[3])
     return True
 
 def test_operator_precedence_parsing():
@@ -226,6 +230,22 @@ def test_operator_precedence_parsing():
             "3 + 4 * 5 == 3 * 1 + 4 * 5",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
         ),
+        (
+            "true",
+            "true",
+        ),
+        (
+            "false",
+            "false",
+        ),
+        (
+            "3 > 5 == false",
+            "((3 > 5) == false)",
+        ),
+        (
+            "3 < 5 == true",
+            "((3 < 5) == true)",
+        ),
     ]
     for code in codes:
         l = lexer.get_lexer(code[0])
@@ -236,17 +256,69 @@ def test_operator_precedence_parsing():
         if actual != code[1]:
             print(f"expected: {code[1]} got: {actual}")
 
+
+def test_identifier(exp: Expression, value: str):
+    check_type(Identifier, exp)
+    ident = Identifier.copy(exp)
+    if ident.value != value:
+        print(f'ident.value not {value}. got {ident.value}')
+        return False
+    if ident.literal() != value:
+        print(f'ident.literal not {value}. got {ident.literal()}')
+        return False
+    return True
+
+
+def test_literal_expression(exp: Expression, expected: object):
+    expected_type = type(expected)
+    if expected_type == int:
+        return test_integer_literal(exp, int(str(expected)))
+    elif expected_type == str:
+        return test_identifier(exp, str(expected))
+    elif expected_type == bool:
+        return test_boolean_expression(exp, bool(expected))
+    print(f'type of exp not handled. got{expected_type}')
+    return False
+
+def test_infix_expression(exp: Expression, left: object,
+                          operator: str, right: object):
+    check_type(InfixExpression, exp)
+    op_exp = InfixExpression.copy(exp)
+    if not test_literal_expression(op_exp.left, left):
+        return False
+    if op_exp.operator != operator:
+        print(f"exp.operator is not '{operator}'. got: {op_exp.operator}")
+        return False
+    if not test_literal_expression(op_exp.right, right):
+        return False
+    return True
+
+
+def test_boolean_expression(exp: Expression, value: bool):
+    check_type(Boolean, exp)
+    if exp.value != value:
+        print(f'exp.value not {value} got {exp.value}')
+        return False
+    if exp.literal() != str(value).lower():
+        print(f"literal not {value} got: {exp.literal()}")
+        return False
+    return True
+
+
+
+
 if __name__ == '__main__':
     # if test_let_statements():
     #     print('test_let_statements accepted!')
-    # if test_return_statement():
-    #     print('test_return_statement accepted!')
-    # if test_identifier_expression():
-    #     print('test_return_statement accepted!')
-    # if test_integer_literal_expression():
-    #     print('test_integer_literal_expression accepted!')
-    # if test_parsing_prefix_expressions():
-    #     print('test_parsing_prefix_expressions accepted!')
-    # if test_parsing_infix_expressions():
-    #     print('test_parsing_infix_expressions accepted!')
-    test_operator_precedence_parsing()
+    if test_return_statement():
+        print('test_return_statement accepted!')
+    if test_identifier_expression():
+        print('test_return_statement accepted!')
+    if test_integer_literal_expression():
+        print('test_integer_literal_expression accepted!')
+    if test_parsing_prefix_expressions():
+        print('test_parsing_prefix_expressions accepted!')
+    if test_parsing_infix_expressions():
+        print('test_parsing_infix_expressions accepted!')
+    if test_operator_precedence_parsing():
+        print('test_operator_precedence_parsing accepted!')

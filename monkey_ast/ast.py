@@ -69,6 +69,10 @@ class Identifier(Expression):
     def expression(self):
         pass
 
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.value)
+
 
 @dataclass
 class LetStatement(Statement):
@@ -181,3 +185,17 @@ class InfixExpression(Expression):
 
     def expression(self):
         pass
+
+@dataclass
+class Boolean(Expression):
+    token: Token
+    value: bool
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        return self.token.literal

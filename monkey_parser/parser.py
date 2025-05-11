@@ -172,6 +172,9 @@ class Parser:
         exp.right = self.parse_expression(precedence)
         return exp
 
+    def parse_bool_literal(self)->Expression:
+        return Boolean(self.curr, self.curr_token_is(TRUE))
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser(lex)
@@ -180,6 +183,8 @@ class Parser:
         p.infix_parse_fns = {}
         p.register_prefix(IDENT, p.parse_identifier)
         p.register_prefix(INT, p.parse_integer_literal)
+        p.register_prefix(TRUE, p.parse_bool_literal)
+        p.register_prefix(FALSE, p.parse_bool_literal)
         p.register_prefix(BANG, p.parse_prefix_expression)
         p.register_prefix(MINUS, p.parse_prefix_expression)
         p.register_infix(PLUS, p.parse_infix_expression)
