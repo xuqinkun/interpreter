@@ -25,6 +25,7 @@ class Expression(Node):
     token=None
     value=None
     operator=None
+    left=None
     right=None
 
     @abstractmethod
@@ -159,3 +160,24 @@ class PrefixExpression(Expression):
 
     def string(self):
         return f"({self.operator}{self.right.string()})"
+
+
+@dataclass
+class InfixExpression(Expression):
+    token: Token=None
+    operator: str=None
+    left: Expression=None
+    right: Expression=None
+
+    @classmethod
+    def copy(cls, exp: Expression)->'InfixExpression':
+        return cls(exp.token, operator=exp.operator, left=exp.left, right=exp.right)
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        return f"({self.left.string()} {self.operator} {self.right.string()})"
+
+    def expression(self):
+        pass

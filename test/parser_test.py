@@ -1,3 +1,5 @@
+from smtpd import program
+
 from monkey_ast.ast import *
 from lexer import lexer
 from monkey_parser.parser import Parser
@@ -15,9 +17,9 @@ def check_len(expected_len:int, actual_len:int):
     if expected_len != actual_len:
         raise Exception(f"Wrong statements number, expected {expected_len} got {actual_len}")
 
-def check_type(expected_type: type, stmt: object):
-    if not isinstance(stmt, expected_type):
-        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(stmt)}")
+def check_type(expected_type: type, obj: object):
+    if not isinstance(obj, expected_type):
+        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
 
 def test_let_statements():
     code = """
@@ -143,14 +145,108 @@ def test_integer_literal(exp: Expression, value: int):
         return False
     return True
 
+def test_parsing_infix_expressions():
+    codes = [
+        ("5 + 5;", 5, "+", 5),
+        ("5 - 5;", 5, "-", 5),
+        ("5 * 5;", 5, "*", 5),
+        ("5 / 5;", 5, "/", 5),
+        ("5 > 5;", 5, ">", 5),
+        ("5 < 5;", 5, "<", 5),
+        ("5 == 5;", 5, "==", 5),
+        ("5 != 5;", 5, "!=", 5),
+    ]
+    for code in  codes:
+        l = lexer.get_lexer(code[0])
+        p = Parser.get_parser(l)
+        program = p.parse_program()
+        check_parser_errors(p)
+        check_len(1, len(program.statements))
+        statement = program.statements[0]
+        check_type(ExpressionStatement, statement)
+        stmt = ExpressionStatement.copy(statement)
+        check_type(InfixExpression, stmt.expression)
+        exp = InfixExpression.copy(exp=stmt.expression)
+        if not test_integer_literal(exp.left, code[1]):
+            return False
+        op = code[2]
+        if exp.operator != op:
+            return f"Operator not match, expected:{op} got: {exp.operator}"
+        if not test_integer_literal(exp.right, code[3]):
+            return False
+    return True
+
+def test_operator_precedence_parsing():
+    codes = [
+        (
+            "-a * b",
+            "((-a) * b)",
+        ),
+        (
+            "!-a",
+            "(!(-a))",
+        ),
+        (
+            "a + b + c",
+            "((a + b) + c)",
+        ),
+        (
+            "a + b - c",
+            "((a + b) - c)",
+        ),
+        (
+            "a * b * c",
+            "((a * b) * c)",
+        ),
+        (
+            "a * b / c",
+            "((a * b) / c)",
+        ),
+        (
+            "a + b / c",
+            "(a + (b / c))",
+        ),
+        (
+            "a + b * c + d / e - f",
+            "(((a + (b * c)) + (d / e)) - f)",
+        ),
+        (
+            "3 + 4; -5 * 5",
+            "(3 + 4)((-5) * 5)",
+        ),
+        (
+            "5 > 4 == 3 < 4",
+            "((5 > 4) == (3 < 4))",
+        ),
+        (
+            "5 < 4 != 3 > 4",
+            "((5 < 4) != (3 > 4))",
+        ),
+        (
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ),
+    ]
+    for code in codes:
+        l = lexer.get_lexer(code[0])
+        p = Parser.get_parser(l)
+        program = p.parse_program()
+        check_parser_errors(p)
+        actual = program.string()
+        if actual != code[1]:
+            print(f"expected: {code[1]} got: {actual}")
+
 if __name__ == '__main__':
     # if test_let_statements():
     #     print('test_let_statements accepted!')
-    if test_return_statement():
-        print('test_return_statement accepted!')
-    if test_identifier_expression():
-        print('test_return_statement accepted!')
-    if test_integer_literal_expression():
-        print('test_integer_literal_expression accepted!')
-    if test_parsing_prefix_expressions():
-        print('test_parsing_prefix_expressions accepted!')
+    # if test_return_statement():
+    #     print('test_return_statement accepted!')
+    # if test_identifier_expression():
+    #     print('test_return_statement accepted!')
+    # if test_integer_literal_expression():
+    #     print('test_integer_literal_expression accepted!')
+    # if test_parsing_prefix_expressions():
+    #     print('test_parsing_prefix_expressions accepted!')
+    # if test_parsing_infix_expressions():
+    #     print('test_parsing_infix_expressions accepted!')
+    test_operator_precedence_parsing()

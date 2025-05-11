@@ -1,29 +1,33 @@
-from typing import Optional,Dict,Callable
-from enum import Enum
-from lexer.lexer import Lexer
-from monkey_ast.ast import (
-    Program,
-    Statement,
-    LetStatement,
-    ReturnStatement,
-    ExpressionStatement,
-    Identifier,
-    Expression,
-    IntegerLiteral,
-    PrefixExpression,
-)
-from monkey_token.token import *
 from dataclasses import dataclass
+from enum import Enum
+from typing import Optional, Dict, Callable
 
-class Priority(Enum):
+from lexer.lexer import Lexer
+from monkey_ast.ast import *
+from monkey_token.token import *
+
+
+class Precedence(Enum):
     BLANK = 0
     LOWEST = 1
-    EQUALS = 2       # ==
-    LESS_GREATER = 3 # > or <
-    SUM = 4          # +
-    PRODUCT = 5      # *
-    PREFIX = 6       # -X or !X
-    CALL = 7         # func(X)
+    EQUALS = 2  # ==
+    LESS_GREATER = 3  # > or <
+    SUM = 4  # +
+    PRODUCT = 5  # *
+    PREFIX = 6  # -X or !X
+    CALL = 7  # func(X)
+
+
+precedences = {
+    EQ: Precedence.EQUALS,
+    NOT_EQ: Precedence.EQUALS,
+    LT: Precedence.LESS_GREATER,
+    GT: Precedence.LESS_GREATER,
+    PLUS: Precedence.SUM,
+    MINUS: Precedence.SUM,
+    SLASH: Precedence.PRODUCT,
+    ASTERISK: Precedence.PRODUCT,
+}
 
 
 @dataclass
@@ -33,10 +37,10 @@ class Parser:
     InfixParseFn = Callable[[Expression], Expression]
 
     lexer: Lexer
-    line: int=0
-    errors: list[str]=None
-    curr: Token=''
-    peek: Token=''
+    line: int = 0
+    errors: list[str] = None
+    curr: Token = ''
+    peek: Token = ''
     prefix_parse_fns: Dict[str, PrefixParseFn] = None
     infix_parse_fns: Dict[str, InfixParseFn] = None
 
@@ -44,7 +48,7 @@ class Parser:
         self.curr = self.peek
         self.peek = self.lexer.next_token()
 
-    def parse_program(self)->Program:
+    def parse_program(self) -> Program:
         statements = []
         program = Program(statements)
         while self.curr.token_type != EOF:
@@ -54,7 +58,7 @@ class Parser:
             self.next_token()
         return program
 
-    def parse_statement(self)->Optional[Statement]:
+    def parse_statement(self) -> Optional[Statement]:
         if self.curr.token_type == LET:
             return self.parse_let_statement()
         elif self.curr.token_type == RETURN:
@@ -62,7 +66,7 @@ class Parser:
         else:
             return self.parse_expression_statement()
 
-    def parse_let_statement(self)->Optional[LetStatement]:
+    def parse_let_statement(self) -> Optional[LetStatement]:
         stmt = LetStatement(self.curr)
         if not self.expect_peek(IDENT):
             return None
@@ -83,25 +87,31 @@ class Parser:
 
     def parse_expression_statement(self):
         stmt = ExpressionStatement(token=self.curr)
-        stmt.expression = self.parse_expression(Priority.LOWEST)
+        stmt.expression = self.parse_expression(Precedence.LOWEST)
         if self.peek_token_is(SEMICOLON):
             self.next_token()
         return stmt
 
-    def parse_expression(self, priority):
+    def parse_expression(self, precedence: Precedence):
         token_type = self.curr.token_type
         prefix = self.prefix_parse_fns.get(token_type, None)
         if prefix is None:
             err_msg = f"no prefix parse function for '{token_type}' found"
             self.append_error(err_msg)
             return None
-        return prefix()
+        left_exp = prefix()
+        while not self.peek_token_is(SEMICOLON) and precedence.value < self.peek_precedence().value:
+            infix = self.infix_parse_fns.get(self.peek.token_type, None)
+            if infix is None:
+                return left_exp
+            self.next_token()
+            left_exp = infix(left_exp)
+        return left_exp
 
     def append_error(self, err_msg: str):
         if self.errors is None:
             self.errors = []
         self.errors.append(err_msg)
-
 
     def peek_error(self, token_type):
         err_msg = f"line:{self.lexer.lino}: expected next token to be {token_type}, got {self.peek.token_type} instead"
@@ -120,6 +130,12 @@ class Parser:
         else:
             self.peek_error(token_type)
             return False
+
+    def peek_precedence(self):
+        return precedences.get(self.peek.token_type, Precedence.LOWEST)
+
+    def curr_precedence(self):
+        return precedences.get(self.curr.token_type, Precedence.LOWEST)
 
     def register_prefix(self, token_type: str, fn: PrefixParseFn):
         """注册前缀解析函数"""
@@ -144,7 +160,16 @@ class Parser:
     def parse_prefix_expression(self):
         exp = PrefixExpression(token=self.curr, operator=self.curr.literal)
         self.next_token()
-        exp.right = self.parse_expression(Priority.PREFIX)
+        exp.right = self.parse_expression(Precedence.PREFIX)
+        return exp
+
+    def parse_infix_expression(self, left: Expression):
+        exp = InfixExpression(token=self.curr,
+                              operator=self.curr.literal,
+                              left=left)
+        precedence = self.curr_precedence()
+        self.next_token()
+        exp.right = self.parse_expression(precedence)
         return exp
 
     @staticmethod
@@ -152,10 +177,19 @@ class Parser:
         p = Parser(lex)
         p.errors = []
         p.prefix_parse_fns = {}
+        p.infix_parse_fns = {}
         p.register_prefix(IDENT, p.parse_identifier)
         p.register_prefix(INT, p.parse_integer_literal)
         p.register_prefix(BANG, p.parse_prefix_expression)
         p.register_prefix(MINUS, p.parse_prefix_expression)
+        p.register_infix(PLUS, p.parse_infix_expression)
+        p.register_infix(MINUS, p.parse_infix_expression)
+        p.register_infix(SLASH, p.parse_infix_expression)
+        p.register_infix(ASTERISK, p.parse_infix_expression)
+        p.register_infix(EQ, p.parse_infix_expression)
+        p.register_infix(NOT_EQ, p.parse_infix_expression)
+        p.register_infix(LT, p.parse_infix_expression)
+        p.register_infix(GT, p.parse_infix_expression)
         p.next_token()
         p.next_token()
         return p
