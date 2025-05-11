@@ -62,6 +62,8 @@ class Program:
             s.append(stmt.string())
         return "".join(s)
 
+    def __repr__(self):
+        return self.string()
 
 @dataclass
 class Identifier(Expression):
@@ -307,3 +309,26 @@ class FunctionLiteral(Expression):
     @classmethod
     def copy(cls, exp: Expression):
         return cls(exp.token, exp.parameters, exp.body)
+
+
+@dataclass
+class CallExpression(Expression):
+    token: Token = None
+    function: Expression = None
+    arguments: list[Expression] = None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        args = []
+        for arg in self.arguments:
+            args.append(arg.string())
+        return f"{self.function.string()}({', '.join(args)})"
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.function, exp.arguments)

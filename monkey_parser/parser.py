@@ -29,6 +29,7 @@ precedences = {
     MINUS: Precedence.SUM,
     SLASH: Precedence.PRODUCT,
     ASTERISK: Precedence.PRODUCT,
+    LPAREN: Precedence.CALL
 }
 
 
@@ -45,6 +46,12 @@ class Parser:
     peek: Token = ''
     prefix_parse_fns: Dict[str, PrefixParseFn] = None
     infix_parse_fns: Dict[str, InfixParseFn] = None
+
+    def __repr__(self):
+        curr = self.curr.literal
+        peek = self.peek.literal
+        code = self.lexer.code
+        return f"curr={curr},peek={peek} \ncode:{code}"
 
     def next_token(self):
         self.curr = self.peek
@@ -238,6 +245,26 @@ class Parser:
             return None
         return identifiers
 
+    def parse_call_expression(self, function: Expression):
+        exp = CallExpression(self.curr, function)
+        exp.arguments = self.parse_call_arguments()
+        return exp
+
+    def parse_call_arguments(self):
+        args = []
+        if self.peek_token_is(RPAREN):
+            self.next_token()
+            return args
+        self.next_token()
+        args.append(self.parse_expression(Precedence.LOWEST))
+        while self.peek_token_is(COMMA):
+            self.next_token()
+            self.next_token()
+            args.append(self.parse_expression(Precedence.LOWEST))
+        if not self.expect_peek(RPAREN):
+            return None
+        return args
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser(lex)
@@ -270,6 +297,8 @@ class Parser:
         p.register_prefix(IF, p.parse_if_expression)
         # function
         p.register_prefix(FUNCTION, p.parse_function_literal)
+        # 调用表达式
+        p.register_infix(LPAREN, p.parse_call_expression)
         # 将curr指向第一个token
         p.next_token()
         p.next_token()

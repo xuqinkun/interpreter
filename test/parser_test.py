@@ -1,6 +1,8 @@
-from monkey_ast.ast import *
+from typing import Callable
 from lexer import lexer
+from monkey_ast.ast import *
 from monkey_parser.parser import Parser
+
 
 def check_parser_errors(p: Parser):
     errors = p.errors
@@ -11,9 +13,11 @@ def check_parser_errors(p: Parser):
         print(f'parse error:{err}')
     return True
 
-def check_len(expected_len:int, actual_len:int):
-    if expected_len != actual_len:
-        raise Exception(f"Wrong statements number, expected {expected_len} got {actual_len}")
+def check_len(expected_len:int, statements:list):
+    if expected_len != len(statements):
+        print(f"Wrong statements number, expected {expected_len} got {len(statements)}")
+        return False
+    return True
 
 def check_type(expected_type: type, obj: object):
     if not isinstance(obj, expected_type):
@@ -35,7 +39,7 @@ def test_let_statements():
     program = parse(code)
     if program is None:
         raise Exception("ParseProgram return None")
-    check_len(3, len(program.statements))
+    check_len(3, program.statements)
     expected_idents = ["x", "y", "foobar"]
     for i, ident in enumerate(expected_idents):
         stmt = program.statements[i]
@@ -68,7 +72,7 @@ def test_return_statement():
     return 993 322;
     """
     program = parse(code)
-    check_len(3, len(program.statements))
+    check_len(3, program.statements)
     for stmt in program.statements:
         if not isinstance(stmt, ReturnStatement):
             print(f"stmt not ReturnStatement, got={type(stmt)}")
@@ -81,7 +85,7 @@ def test_return_statement():
 def test_identifier_expression():
     code = 'foobar;'
     program = parse(code)
-    check_len(1, len(program.statements))
+    check_len(1, program.statements)
     stmt = program.statements[0]
     exp = check_type(ExpressionStatement, stmt)
     ident = check_type(Identifier, exp.expression)
@@ -95,7 +99,7 @@ def test_identifier_expression():
 def test_integer_literal_expression():
     code = "51;"
     program = parse(code)
-    check_len(1, len(program.statements))
+    check_len(1, program.statements)
     stmt = program.statements[0]
     exp = check_type(ExpressionStatement, stmt)
     literal = check_type(IntegerLiteral, exp.expression)
@@ -109,7 +113,7 @@ def test_parsing_prefix_expressions():
     codes = [("!5;", "!", 5), ("-15;", "-", 15)]
     for code in codes:
         program = parse(code[0])
-        check_len(1, len(program.statements))
+        check_len(1, program.statements)
         stmt = check_type(ExpressionStatement, program.statements[0])
         exp = check_type(PrefixExpression, stmt.expression)
         if exp.operator != code[1]:
@@ -144,7 +148,7 @@ def test_parsing_infix_expressions():
     ]
     for code in  codes:
         program = parse(code[0])
-        check_len(1, len(program.statements))
+        check_len(1, program.statements)
         statement = program.statements[0]
         check_type(ExpressionStatement, statement)
         stmt = ExpressionStatement.copy(statement)
@@ -239,6 +243,18 @@ def test_operator_precedence_parsing():
             "!(true == true)",
             "(!(true == true))",
         ),
+        (
+            "a + add(b * c) + d",
+            "((a + add((b * c))) + d)",
+        ),
+        (
+            "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+        ),
+        (
+            "add(a + b + c * d / f + g)",
+            "add((((a + b) + ((c * d) / f)) + g))",
+        ),
     ]
     for code in codes:
         program = parse(code[0])
@@ -295,13 +311,13 @@ def test_boolean_expression(exp: Expression, value: bool):
 def test_if_expression():
     code = "if (x < y) {x}"
     program = parse(code)
-    check_len(1, len(program.statements))
+    check_len(1, program.statements)
     stmt = check_type(ExpressionStatement, program.statements[0])
     exp = check_type(IFExpression, stmt.expression)
     if not test_infix_expression(exp.condition, "x", "<", "y"):
         return False
     statements = exp.consequence.statements
-    check_len(1, len(statements))
+    check_len(1, statements)
     consequence = check_type(ExpressionStatement, statements[0])
     if not test_identifier(consequence.expression, "x"):
         return False
@@ -313,7 +329,7 @@ def test_if_expression():
 def test_if_else_expression():
     code = "if (x < y) {x} else {y}"
     program = parse(code)
-    check_len(1, len(program.statements))
+    check_len(1, program.statements)
 
     stmt = check_type(ExpressionStatement, program.statements[0])
 
@@ -321,13 +337,13 @@ def test_if_else_expression():
     if not test_infix_expression(exp.condition, "x", "<", "y"):
         return False
     statements = exp.consequence.statements
-    check_len(1, len(statements))
+    check_len(1, statements)
 
     consequence = check_type(ExpressionStatement, statements[0])
     if not test_identifier(consequence.expression, "x"):
         return False
     alternative = exp.alternative
-    check_len(1, len(alternative.statements))
+    check_len(1, alternative.statements)
 
     alter = check_type(ExpressionStatement, alternative.statements[0])
     if not test_identifier(alter.expression, "y"):
@@ -338,15 +354,15 @@ def test_if_else_expression():
 def test_function_literal_parsing():
     code = 'fn(x, y) { x + y;}'
     program = parse(code)
-    check_len(1, len(program.statements))
+    check_len(1, program.statements)
 
     stmt = check_type(ExpressionStatement, program.statements[0])
 
     func = check_type(FunctionLiteral, stmt.expression)
-    check_len(2, len(func.parameters))
+    check_len(2, func.parameters)
     test_literal_expression(func.parameters[0], "x")
     test_literal_expression(func.parameters[1], "y")
-    check_len(1, len(func.body.statements))
+    check_len(1, func.body.statements)
 
     body_stmt = check_type(ExpressionStatement, func.body.statements[0])
     if not test_infix_expression(body_stmt.expression, "x", "+", "y"):
@@ -364,32 +380,49 @@ def test_function_parameter_parsing():
         program = parse(code[0])
         stmt = check_type(ExpressionStatement, program.statements[0])
         func = check_type(FunctionLiteral, stmt.expression)
-        check_len(len(code[1]), len(func.parameters))
+        check_len(len(code[1]), func.parameters)
         for param, ident in zip(func.parameters, code[1]):
             if not test_literal_expression(param, ident):
                 return False
     return True
 
+def test_call_expression_parsing():
+    code = "add(1, 2*3, 4+5);"
+    program = parse(code)
+    if not check_len(1, program.statements):
+        return False
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    exp = check_type(CallExpression, stmt.expression)
+    if not test_identifier(exp.function, "add"):
+        return False
+    check_len(3, exp.arguments)
+    test_literal_expression(exp.arguments[0], 1)
+    test_infix_expression(exp.arguments[1], 2, "*", 3)
+    test_infix_expression(exp.arguments[2], 4, "+", 5)
+    return True
+
+
+def run_cases(cases: list[Callable]):
+    for func in cases:
+        if func():
+            print(f'{func.__name__} passed!')
+        else:
+            print(f'{func.__name__} failed!')
+
 if __name__ == '__main__':
-    if test_let_statements():
-        print('test_let_statements passed!')
-    if test_return_statement():
-        print('test_return_statement passed!')
-    if test_identifier_expression():
-        print('test_identifier_expression passed!')
-    if test_integer_literal_expression():
-        print('test_integer_literal_expression passed!')
-    if test_parsing_prefix_expressions():
-        print('test_parsing_prefix_expressions passed!')
-    if test_parsing_infix_expressions():
-        print('test_parsing_infix_expressions passed!')
-    if test_operator_precedence_parsing():
-        print('test_operator_precedence_parsing passed!')
-    if test_if_expression():
-        print('test_if_expression passed!')
-    if test_if_else_expression():
-        print('test_if_else_expression passed!')
-    if test_function_literal_parsing():
-        print('test_function_literal_parsing passed!')
-    if test_function_parameter_parsing():
-        print('test_function_parameter_parsing passed!')
+    cases = [
+        test_let_statements,
+        test_return_statement,
+        test_identifier_expression,
+        test_integer_literal_expression,
+        test_parsing_prefix_expressions,
+        test_parsing_infix_expressions,
+        test_operator_precedence_parsing,
+        test_if_expression,
+        test_if_else_expression,
+        test_function_literal_parsing,
+        test_function_parameter_parsing,
+        test_call_expression_parsing,
+    ]
+    run_cases(cases)
+    parse("add(1+2)*3")
