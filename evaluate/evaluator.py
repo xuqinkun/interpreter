@@ -63,6 +63,10 @@ def eval_integer_infix_expression(operator: str, left: object.Object, right: obj
         return object.Integer(left_val * right_val)
     elif operator == '/':
         return object.Integer(left_val / right_val)
+    elif operator == '&':
+        return object.Integer(left_val & right_val)
+    elif operator == '|':
+        return object.Integer(left_val | right_val)
     elif operator == '<':
         return native_bool_to_boolean_object(left_val < right_val)
     elif operator == '>':
@@ -71,6 +75,7 @@ def eval_integer_infix_expression(operator: str, left: object.Object, right: obj
         return native_bool_to_boolean_object(left_val == right_val)
     elif operator == '!=':
         return native_bool_to_boolean_object(left_val != right_val)
+    print(f'Warning:Operation {left.value} {operator} {right.value} is not supported')
     return NULL
 
 
@@ -83,6 +88,8 @@ def eval_boolean_infix_expression(operator: str, left: object.Boolean, right: ob
         return native_bool_to_boolean_object(left == right)
     elif operator == '!=':
         return native_bool_to_boolean_object(left != right)
+    print(f'Warning:Operation {left.value} {operator} {right.value} is not supported')
+    return NULL
 
 
 def native_bool_to_boolean_object(obj: bool):
