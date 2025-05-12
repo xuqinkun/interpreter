@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Callable
-
+from lexer import lexer
 from lexer.lexer import Lexer
 from monkey_ast.ast import *
 from monkey_token.token import *
@@ -272,3 +272,21 @@ class Parser:
         p.next_token()
         p.next_token()
         return p
+
+
+def check_parser_errors(p: Parser):
+    errors = p.errors
+    if not errors:
+        return False
+    print(f'parser has {len(errors)} errors')
+    for err in errors:
+        print(f'parse error:{err}')
+    return True
+
+
+def parse(code):
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    return program
