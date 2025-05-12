@@ -44,6 +44,26 @@ def eval_minus_expression(right: object.Object):
     return NULL
 
 
+def eval_infix_expression(operator: str, left: object.Object, right: object.Object):
+    if isinstance(left, object.Integer) and isinstance(right, object.Integer):
+        return eval_integer_infix_expression(operator, left, right)
+    return NULL
+
+
+def eval_integer_infix_expression(operator: str, left: object.Object, right: object.Object):
+    left_val = left.value
+    right_val = right.value
+    if operator == '+':
+        return object.Integer(left_val + right_val)
+    elif operator == '-':
+        return object.Integer(left_val - right_val)
+    elif operator == '*':
+        return object.Integer(left_val * right_val)
+    elif operator == '/':
+        return object.Integer(left_val / right_val)
+    return NULL
+
+
 def evaluate(node: ast.Node):
     if isinstance(node, ast.IntegerLiteral):
         return object.Integer(node.value)
@@ -59,4 +79,8 @@ def evaluate(node: ast.Node):
     elif isinstance(node, ast.PrefixExpression):
         right = evaluate(node.right)
         return evaluate_prefix_expression(node.operator, right)
+    elif isinstance(node, ast.InfixExpression):
+        left = evaluate(node.left)
+        right = evaluate(node.right)
+        return eval_infix_expression(node.operator, left, right)
     return NULL
