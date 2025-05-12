@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
 from monkey_ast import ast
 from object import object
+from object.environment import Environment
 
 NULL = object.Null()
 TRUE = object.Boolean(True)
 FALSE = object.Boolean(False)
 
 
-def evaluate_statements(statements: list[ast.Statement]):
+def evaluate_statements(statements: list[ast.Statement], env: Environment):
     result = NULL
     for stmt in statements:
-        result = evaluate(stmt)
+        result = evaluate(stmt, env)
         if isinstance(result, object.ReturnValue):
             return result.value
+        if isinstance(result, object.Error):
+            return result
     return result
 
 
@@ -20,9 +23,11 @@ def evaluate_prefix_expression(op: str, right: object.Object):
     if op == '!':
         return eval_bang_expression(right)
     if op == '-':
-        right = eval_minus_expression(right)
-        return object.Integer(-right.value)
-    return NULL
+        ret = eval_minus_expression(right)
+        if ret == NULL:
+            return object.Error(f"unknown operator: {op}{right.type()}")
+        return object.Integer(-ret.value)
+    return object.Error(f"unknown operator: {op}{right}")
 
 
 def eval_bang_expression(right: object.Object):
@@ -46,52 +51,51 @@ def eval_minus_expression(right: object.Object):
     return NULL
 
 
-def eval_infix_expression(operator: str, left: object.Object, right: object.Object):
+def eval_infix_expression(op: str, left: object.Object, right: object.Object):
     if isinstance(left, object.Integer) and isinstance(right, object.Integer):
-        return eval_integer_infix_expression(operator, left, right)
+        return eval_integer_infix_expression(op, left, right)
     if isinstance(left, object.Boolean) and isinstance(right, object.Boolean):
-        return eval_boolean_infix_expression(operator, left, right)
-    return NULL
+        return eval_boolean_infix_expression(op, left, right)
+    return object.Error(f"type mismatch: {left.type()} {op} {right.type()}")
 
 
-def eval_integer_infix_expression(operator: str, left: object.Object, right: object.Object):
+def eval_integer_infix_expression(op: str, left: object.Object, right: object.Object):
     left_val = left.value
     right_val = right.value
-    if operator == '+':
+    if op == '+':
         return object.Integer(left_val + right_val)
-    elif operator == '-':
+    elif op == '-':
         return object.Integer(left_val - right_val)
-    elif operator == '*':
+    elif op == '*':
         return object.Integer(left_val * right_val)
-    elif operator == '/':
+    elif op == '/':
         return object.Integer(left_val / right_val)
-    elif operator == '&':
+    elif op == '&':
         return object.Integer(left_val & right_val)
-    elif operator == '|':
+    elif op == '|':
         return object.Integer(left_val | right_val)
-    elif operator == '<':
+    elif op == '<':
         return native_bool_to_boolean_object(left_val < right_val)
-    elif operator == '>':
+    elif op == '>':
         return native_bool_to_boolean_object(left_val > right_val)
-    elif operator == '==':
+    elif op == '==':
         return native_bool_to_boolean_object(left_val == right_val)
-    elif operator == '!=':
+    elif op == '!=':
         return native_bool_to_boolean_object(left_val != right_val)
-    print(f'Warning:Operation {left.value} {operator} {right.value} is not supported')
-    return NULL
+    return object.Error(f'unknown operator: {left.type()} {op} {right.type()}')
 
 
-def eval_boolean_infix_expression(operator: str, left: object.Boolean, right: object.Boolean):
-    if operator == '&&':
+def eval_boolean_infix_expression(op: str, left: object.Boolean, right: object.Boolean):
+    if op == '&&':
         return native_bool_to_boolean_object(left.value and right.value)
-    elif operator == '||':
+    elif op == '||':
         return native_bool_to_boolean_object(left.value or right.value)
-    elif operator == '==':
+    elif op == '==':
         return native_bool_to_boolean_object(left == right)
-    elif operator == '!=':
+    elif op == '!=':
         return native_bool_to_boolean_object(left != right)
-    print(f'Warning:Operation {left.value} {operator} {right.value} is not supported')
-    return NULL
+
+    return object.Error(f'unknown operator: {left.type()} {op} {right.type()}')
 
 
 def native_bool_to_boolean_object(obj: bool):
@@ -101,38 +105,63 @@ def native_bool_to_boolean_object(obj: bool):
         return FALSE
 
 
-def evaluate(node: ast.Node):
+def is_error(obj: object.Object):
+    if obj is not None:
+        return obj.type() == object.ERROR_OBJ
+    return False
+
+def evaluate(node: ast.Node, env: Environment):
     if isinstance(node, ast.IntegerLiteral):
         return object.Integer(node.value)
     if isinstance(node, ast.Boolean):
         return native_bool_to_boolean_object(node.value)
     elif isinstance(node, ast.Program):
-        return evaluate_statements(node.statements)
+        return evaluate_statements(node.statements, env)
     elif isinstance(node, ast.ExpressionStatement):
-        return evaluate(node.expression)
+        return evaluate(node.expression, env)
     elif isinstance(node, ast.PrefixExpression):
-        right = evaluate(node.right)
+        right = evaluate(node.right, env)
+        if is_error(right):
+            return right
         return evaluate_prefix_expression(node.operator, right)
     elif isinstance(node, ast.InfixExpression):
-        left = evaluate(node.left)
-        right = evaluate(node.right)
+        left = evaluate(node.left, env)
+        if is_error(left):
+            return left
+        right = evaluate(node.right, env)
+        if is_error(right):
+            return right
         return eval_infix_expression(node.operator, left, right)
     elif isinstance(node, ast.IFExpression):
-        return eval_if_expression(node)
+        return eval_if_expression(node, env)
     elif isinstance(node, ast.BlockStatement):
-        return evaluate_block_statement(node)
+        return evaluate_block_statement(node, env)
     elif isinstance(node, ast.ReturnStatement):
-        val = evaluate(node.return_value)
+        val = evaluate(node.return_value, env)
+        if is_error(val):
+            return val
         return object.ReturnValue(val)
+    elif isinstance(node, ast.LetStatement):
+        val = evaluate(node.value, env)
+        env.put(node.name.value, val)
+        if is_error(val):
+            return val
+    elif isinstance(node, ast.Identifier):
+        return eval_identifier(node, env)
     return NULL
 
+def eval_identifier(node: ast.Identifier, env: Environment):
+    val = env.get(node.value)
+    if val == NULL:
+        return object.Error(f"identifier not found: {node.value}")
+    return val
 
-def eval_if_expression(node: ast.IFExpression):
-    condition = evaluate(node.condition)
+def eval_if_expression(node: ast.IFExpression, env: Environment):
+    condition = evaluate(node.condition, env)
     if is_truthy(condition):
-        return evaluate(node.consequence)
+        return evaluate(node.consequence, env)
     else:
-        return evaluate(node.alternative)
+        return evaluate(node.alternative, env)
 
 
 def is_truthy(obj: object.Object):
@@ -142,11 +171,13 @@ def is_truthy(obj: object.Object):
         return True
 
 
-def evaluate_block_statement(block: ast.BlockStatement):
+def evaluate_block_statement(block: ast.BlockStatement, env: Environment):
     statements = block.statements
     ret = NULL
     for stmt in statements:
-        ret = evaluate(stmt)
+        ret = evaluate(stmt, env)
+        if isinstance(ret, object.Error):
+            return ret
         if ret != NULL and isinstance(ret, object.ReturnValue):
             return ret
     return ret

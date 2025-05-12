@@ -5,6 +5,7 @@ from lexer.lexer import get_lexer
 from monkey_parser.parser import *
 from evaluate.evaluator import evaluate
 from object.object import *
+from object.environment import Environment
 
 
 def check_type(expected_type: type, obj: object):
@@ -16,7 +17,8 @@ def check_type(expected_type: type, obj: object):
 def get_eval(code: str):
     p = Parser.get_parser(get_lexer(code))
     program = p.parse_program()
-    return evaluate(program)
+    env = Environment()
+    return evaluate(program, env)
 
 
 def test_integer_object(expected: int, obj: Object):
@@ -168,6 +170,70 @@ def test_return_statements():
     return True
 
 
+def test_error_handling():
+    cases = [
+        (
+            "5 + true;",
+            "type mismatch: INTEGER + BOOLEAN",
+        ),
+        (
+            "5 + true; 5;",
+            "type mismatch: INTEGER + BOOLEAN",
+        ),
+        (
+            "-true",
+            "unknown operator: -BOOLEAN",
+        ),
+        (
+            "true + false;",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        ),
+        (
+            "5; true + false; 5",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        ),
+        (
+            "if (10 > 1) { true + false; }",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        ),
+        (
+            """
+    if (10 > 1) {
+        if (10 > 1) {
+        return true + false;
+        }
+    
+        return 1;
+    }
+    """,
+            "unknown operator: BOOLEAN + BOOLEAN",
+        ),
+        ("x", "identifier not found: x")
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if not isinstance(ret, object.Error):
+            print(f'no error obj returned,got: {type(ret)}:{ret}')
+            continue
+        if ret.message != case[1]:
+            return False
+    return True
+
+
+def test_let_statements():
+    cases = [
+        ("let a = 5; a;", 5),
+        ("let a = 5 * 5; a;", 25),
+        ("let a = 5; let b = a; b;", 5),
+        ("let a = 5; let b = a; let c = a + b + 5; c;", 15),
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if not test_integer_object(case[1], ret):
+            return False
+    return True
+
+
 if __name__ == '__main__':
     tests = [
         test_eval_integer_expression,
@@ -175,5 +241,7 @@ if __name__ == '__main__':
         test_eval_boolean_expression,
         test_if_else_expression,
         test_return_statements,
+        test_error_handling,
+        test_let_statements,
     ]
     run_cases(tests)

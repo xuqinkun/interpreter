@@ -6,6 +6,7 @@ NULL_OBJ = "NULL"
 INTEGER_OBJ = "INTEGER"
 BOOLEAN_OBJ = "BOOLEAN"
 RETURN_VALUE_OBJ = "RETURN_VALUE"
+ERROR_OBJ = "ERROR"
 
 
 class Object:
@@ -69,3 +70,15 @@ class ReturnValue(Object):
 
     def inspect(self) -> str:
         return self.value.inspect()
+
+
+@dataclass
+class Error(Object):
+    message: str
+
+    def type(self) -> str:
+        return ERROR_OBJ
+
+    def inspect(self) -> str:
+        return "ERROR: " + self.message
+
