@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Callable
 
-from prompt_toolkit.styles import Priority
-
 from lexer.lexer import Lexer
 from monkey_ast.ast import *
 from monkey_token.token import *
