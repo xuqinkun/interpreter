@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from object import object
 from lexer.lexer import get_lexer
 from monkey_parser.parser import *
 from evaluate.evaluator import evaluate
@@ -11,7 +12,7 @@ def check_type(expected_type: type, obj: object):
     return expected_type.copy(obj)
 
 
-def test_eval(code: str):
+def get_eval(code: str):
     p = Parser.get_parser(get_lexer(code))
     program = p.parse_program()
     return evaluate(program)
@@ -29,9 +30,11 @@ def test_eval_integer_expression():
     cases = [
         ("5", 5),
         ("10", 10),
+        ("-5", -5),
+        ("-10", -10),
     ]
     for case in cases:
-        evaluated = test_eval(case[0])
+        evaluated = get_eval(case[0])
         if not test_integer_object(evaluated, case[1]):
             return False
     return True
@@ -46,8 +49,34 @@ def run_cases(func_list: list[Callable]):
             print(f"Run case[{func_name}] failed")
 
 
-if __name__ == '__main__':
+def test_bang_operator():
     cases = [
-        test_eval_integer_expression
+        ("!true", False),
+        ("!false", True),
+        ("!5", False),
+        ("!!true", True),
+        ("!!false", False),
+        ("!!5", True),
+        ("!0", True),
     ]
-    run_cases(cases)
+    for case in cases:
+        ret = get_eval(case[0])
+        if not test_boolean_object(ret, case[1]):
+            return False
+    return True
+
+
+def test_boolean_object(obj: Object, expected: bool):
+    result = check_type(object.Boolean, obj)
+    if result.value != expected:
+        print(f"result.value has wrong value, got:{result.value} expected: {expected}")
+        return False
+    return True
+
+
+if __name__ == '__main__':
+    tests = [
+        test_eval_integer_expression,
+        test_bang_operator,
+    ]
+    run_cases(tests)

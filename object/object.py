@@ -8,7 +8,7 @@ NULL_OBJ = "NULL"
 
 
 class Object:
-    value=None
+    value = None
 
     @abstractmethod
     def type(self) -> str:
@@ -42,7 +42,7 @@ class Boolean(Object):
         return BOOLEAN_OBJ
 
     def inspect(self) -> str:
-        return str(self.value)
+        return str(self.value).lower()
 
     @classmethod
     def copy(cls, obj: Object):
@@ -57,7 +57,3 @@ class Null(Object):
 
     def inspect(self) -> str:
         return 'null'
-
-
-if __name__ == '__main__':
-    print('obj')
