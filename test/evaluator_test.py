@@ -99,6 +99,15 @@ def test_if_else_expression():
         ("if (1 > 2) { 10 }", NULL),
         ("if (1 > 2) { 10 } else { 20 }", 20),
         ("if (1 < 2) { 10 } else { 20 }", 10),
+        ("""
+            if (10 > 1) {
+              if (10 > 1) {
+                return 10;
+              }
+            
+              return 1;
+          }
+        """, 10),
     ]
     for case in cases:
         ret = get_eval(case[0])

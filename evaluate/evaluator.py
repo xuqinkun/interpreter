@@ -11,7 +11,7 @@ def evaluate_statements(statements: list[ast.Statement]):
     result = NULL
     for stmt in statements:
         result = evaluate(stmt)
-        if isinstance(stmt, ast.ReturnStatement):
+        if isinstance(result, object.ReturnValue):
             return result.value
     return result
 
@@ -147,6 +147,6 @@ def evaluate_block_statement(block: ast.BlockStatement):
     ret = NULL
     for stmt in statements:
         ret = evaluate(stmt)
-        if isinstance(ret, ast.ReturnStatement):
-            return ret.return_value
+        if ret != NULL and isinstance(ret, object.ReturnValue):
+            return ret
     return ret

@@ -103,7 +103,7 @@ class LetStatement(Statement):
         return self.string()
 
     def string(self):
-        exp = '' if self.expression is None else self.expression.string()
+        exp = '' if self.value is None else self.value.string()
         return f"{self.literal()} {self.name.string()} = {exp};"
 
     @classmethod
@@ -285,6 +285,9 @@ class IFExpression(Expression):
             return stem
         else:
             return f"{stem} else {self.alternative.string()}"
+
+    def __repr__(self):
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
