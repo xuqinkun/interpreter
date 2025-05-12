@@ -145,11 +145,26 @@ def test_boolean_object(obj: Object, expected: bool):
     return True
 
 
+def test_return_statements():
+    cases = [
+        ("return 10;", 10),
+        ("return 10; 9;", 10),
+        ("return 2 * 5; 9;", 10),
+        ("9; return 2 * 5; 9;", 10),
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if not test_integer_object(case[1], ret):
+            return False
+    return True
+
+
 if __name__ == '__main__':
     tests = [
         test_eval_integer_expression,
         test_bang_operator,
         test_eval_boolean_expression,
         test_if_else_expression,
+        test_return_statements,
     ]
     run_cases(tests)
