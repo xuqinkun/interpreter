@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from object import object
+from evaluate import evaluator
 from lexer.lexer import get_lexer
 from monkey_parser.parser import *
 from evaluate.evaluator import evaluate
@@ -18,7 +19,7 @@ def get_eval(code: str):
     return evaluate(program)
 
 
-def test_integer_object(obj: Object, expected: int):
+def test_integer_object(expected: int, obj: Object):
     result = check_type(Integer, obj)
     if result.value != expected:
         print(f"object has wrong value, got:{result.value} expected: {expected}")
@@ -46,7 +47,7 @@ def test_eval_integer_expression():
     ]
     for case in cases:
         evaluated = get_eval(case[0])
-        if not test_integer_object(evaluated, case[1]):
+        if not test_integer_object(case[1], evaluated):
             return False
     return True
 
@@ -78,6 +79,34 @@ def test_eval_boolean_expression():
     for case in cases:
         ret = get_eval(case[0])
         if not test_boolean_object(ret, case[1]):
+            return False
+    return True
+
+
+def test_null_object(obj: object.Object):
+    if obj != evaluator.NULL:
+        print(f'obj is not NULL, got: {type(obj)}:{obj}')
+        return False
+    return True
+
+
+def test_if_else_expression():
+    cases = [
+        ("if (true) { 10 }", 10),
+        ("if (false) { 10 }", NULL),
+        ("if (1) { 10 }", 10),
+        ("if (1 < 2) { 10 }", 10),
+        ("if (1 > 2) { 10 }", NULL),
+        ("if (1 > 2) { 10 } else { 20 }", 20),
+        ("if (1 < 2) { 10 } else { 20 }", 10),
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if case[1] == NULL:
+            exe_ret = test_null_object(ret)
+        else:
+            exe_ret = test_integer_object(case[1], ret)
+        if not exe_ret:
             return False
     return True
 
@@ -118,8 +147,9 @@ def test_boolean_object(obj: Object, expected: bool):
 
 if __name__ == '__main__':
     tests = [
-        # test_eval_integer_expression,
-        # test_bang_operator,
-        test_eval_boolean_expression
+        test_eval_integer_expression,
+        test_bang_operator,
+        test_eval_boolean_expression,
+        test_if_else_expression,
     ]
     run_cases(tests)

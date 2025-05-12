@@ -115,4 +115,31 @@ def evaluate(node: ast.Node):
         left = evaluate(node.left)
         right = evaluate(node.right)
         return eval_infix_expression(node.operator, left, right)
+    elif isinstance(node, ast.IFExpression):
+        return eval_if_expression(node)
+    elif isinstance(node, ast.BlockStatement):
+        return evaluate_block_statement(node)
     return NULL
+
+
+def eval_if_expression(node: ast.IFExpression):
+    condition = evaluate(node.condition)
+    if is_truthy(condition):
+        return evaluate(node.consequence)
+    else:
+        return evaluate(node.alternative)
+
+
+def is_truthy(obj: object.Object):
+    if obj == NULL or obj == FALSE:
+        return False
+    else:
+        return True
+
+
+def evaluate_block_statement(block: ast.BlockStatement):
+    statements = block.statements
+    ret = NULL
+    for stmt in statements:
+        ret = evaluate(stmt)
+    return ret
