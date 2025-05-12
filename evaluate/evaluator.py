@@ -47,6 +47,8 @@ def eval_minus_expression(right: object.Object):
 def eval_infix_expression(operator: str, left: object.Object, right: object.Object):
     if isinstance(left, object.Integer) and isinstance(right, object.Integer):
         return eval_integer_infix_expression(operator, left, right)
+    if isinstance(left, object.Boolean) and isinstance(right, object.Boolean):
+        return eval_boolean_infix_expression(operator, left, right)
     return NULL
 
 
@@ -61,17 +63,40 @@ def eval_integer_infix_expression(operator: str, left: object.Object, right: obj
         return object.Integer(left_val * right_val)
     elif operator == '/':
         return object.Integer(left_val / right_val)
+    elif operator == '<':
+        return native_bool_to_boolean_object(left_val < right_val)
+    elif operator == '>':
+        return native_bool_to_boolean_object(left_val > right_val)
+    elif operator == '==':
+        return native_bool_to_boolean_object(left_val == right_val)
+    elif operator == '!=':
+        return native_bool_to_boolean_object(left_val != right_val)
     return NULL
+
+
+def eval_boolean_infix_expression(operator: str, left: object.Boolean, right: object.Boolean):
+    if operator == '&&':
+        return native_bool_to_boolean_object(left.value and right.value)
+    elif operator == '||':
+        return native_bool_to_boolean_object(left.value or right.value)
+    elif operator == '==':
+        return native_bool_to_boolean_object(left == right)
+    elif operator == '!=':
+        return native_bool_to_boolean_object(left != right)
+
+
+def native_bool_to_boolean_object(obj: bool):
+    if obj:
+        return TRUE
+    else:
+        return FALSE
 
 
 def evaluate(node: ast.Node):
     if isinstance(node, ast.IntegerLiteral):
         return object.Integer(node.value)
     if isinstance(node, ast.Boolean):
-        if node.value:
-            return TRUE
-        else:
-            return FALSE
+        return native_bool_to_boolean_object(node.value)
     elif isinstance(node, ast.Program):
         return evaluate_statements(node.statements)
     elif isinstance(node, ast.ExpressionStatement):

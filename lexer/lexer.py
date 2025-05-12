@@ -49,6 +49,18 @@ class Lexer:
             tok = Token(PLUS, ch)
         elif ch == '-':
             tok = Token(MINUS, ch)
+        elif ch == '&':
+            if self.peek() == '&':
+                self.read_char()
+                tok = Token(LOGIC_AND, ch + self.ch)
+            else:
+                tok = Token(BITWISE_AND, ch)
+        elif ch == '|':
+            if self.peek() == '|':
+                self.read_char()
+                tok = Token(LOGIC_OR, ch + self.ch)
+            else:
+                tok = Token(BITWISE_OR, ch)
         elif ch == '!':
             if self.peek() == '=':
                 self.read_char()

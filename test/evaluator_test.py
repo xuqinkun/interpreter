@@ -51,6 +51,37 @@ def test_eval_integer_expression():
     return True
 
 
+def test_eval_boolean_expression():
+    cases = [
+        ("1 < 2", True),
+        ("1 > 2", False),
+        ("1 < 1", False),
+        ("1 > 1", False),
+        ("1 == 1", True),
+        ("1 != 1", False),
+        ("1 == 2", False),
+        ("1 != 2", True),
+        ("true == true", True),
+        ("true && true", True),
+        ("false == false", True),
+        ("false || false", False),
+        ("true == false", False),
+        ("true != false", True),
+        ("false != true", True),
+        ("(1 < 2) == true", True),
+        ("(1 < 2) == false", False),
+        ("(1 > 2) == true", False),
+        ("(1 > 2) == false", True),
+        ("(1 > 2) && false", False),
+        ("(1 > 2) || false", False),
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if not test_boolean_object(ret, case[1]):
+            return False
+    return True
+
+
 def run_cases(func_list: list[Callable]):
     for func in func_list:
         func_name = func.__name__
@@ -87,7 +118,8 @@ def test_boolean_object(obj: Object, expected: bool):
 
 if __name__ == '__main__':
     tests = [
-        test_eval_integer_expression,
-        test_bang_operator,
+        # test_eval_integer_expression,
+        # test_bang_operator,
+        test_eval_boolean_expression
     ]
     run_cases(tests)
