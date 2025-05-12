@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Callable
-
-from prompt_toolkit.styles import Priority
-
+from lexer import lexer
 from lexer.lexer import Lexer
 from monkey_ast.ast import *
 from monkey_token.token import *
@@ -12,15 +10,21 @@ from monkey_token.token import *
 class Precedence(Enum):
     BLANK = 0
     LOWEST = 1
-    EQUALS = 2  # ==
-    LESS_GREATER = 3  # > or <
-    SUM = 4  # +
-    PRODUCT = 5  # *
-    PREFIX = 6  # -X or !X
-    CALL = 7  # func(X)
+    LOGIC = 2
+    BITWISE = 3
+    EQUALS = 4  # ==
+    LESS_GREATER = 5  # > or <
+    SUM = 6  # +
+    PRODUCT = 7  # *
+    PREFIX = 8  # -X or !X
+    CALL = 9  # func(X)
 
 
 precedences = {
+    LOGIC_AND: Precedence.LOGIC,
+    LOGIC_OR: Precedence.LOGIC,
+    BITWISE_AND: Precedence.BITWISE,
+    BITWISE_OR: Precedence.BITWISE,
     EQ: Precedence.EQUALS,
     NOT_EQ: Precedence.EQUALS,
     LT: Precedence.LESS_GREATER,
@@ -183,7 +187,7 @@ class Parser:
         exp.right = self.parse_expression(precedence)
         return exp
 
-    def parse_bool_literal(self)->Expression:
+    def parse_bool_literal(self) -> Expression:
         return Boolean(self.curr, self.curr_token_is(TRUE))
 
     def parse_grouped_expression(self):
@@ -290,6 +294,10 @@ class Parser:
         p.register_infix(MINUS, p.parse_infix_expression)
         p.register_infix(SLASH, p.parse_infix_expression)
         p.register_infix(ASTERISK, p.parse_infix_expression)
+        p.register_infix(LOGIC_AND, p.parse_infix_expression)
+        p.register_infix(LOGIC_OR, p.parse_infix_expression)
+        p.register_infix(BITWISE_AND, p.parse_infix_expression)
+        p.register_infix(BITWISE_OR, p.parse_infix_expression)
         # =,!=,<,>
         p.register_infix(EQ, p.parse_infix_expression)
         p.register_infix(NOT_EQ, p.parse_infix_expression)
@@ -305,3 +313,21 @@ class Parser:
         p.next_token()
         p.next_token()
         return p
+
+
+def check_parser_errors(p: Parser):
+    errors = p.errors
+    if not errors:
+        return False
+    print(f'parser has {len(errors)} errors')
+    for err in errors:
+        print(f'parse error:{err}')
+    return True
+
+
+def parse(code):
+    l = lexer.get_lexer(code)
+    p = Parser.get_parser(l)
+    program = p.parse_program()
+    check_parser_errors(p)
+    return program

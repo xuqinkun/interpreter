@@ -1,5 +1,5 @@
 class Token:
-    def __init__(self, token_type: str='', val: str=''):
+    def __init__(self, token_type: str = '', val: str = ''):
         self._token_type = token_type
         self._literal = val
 
@@ -57,6 +57,12 @@ FALSE = "false"
 EQ = "=="
 NOT_EQ = "!="
 
+# 逻辑运算
+LOGIC_AND = '&&'
+LOGIC_OR = '||'
+# 位运算
+BITWISE_AND = '&'
+BITWISE_OR = '|'
 
 # 关键字
 FUNCTION = "FUNCTION"
@@ -70,9 +76,9 @@ keywords = {
     'let': LET,
     'if': IF,
     'return': RETURN,
-    'true':TRUE,
-    'false':FALSE,
-    'else':ELSE,
+    'true': TRUE,
+    'false': FALSE,
+    'else': ELSE,
 }
 
 
