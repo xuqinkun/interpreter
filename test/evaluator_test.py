@@ -10,8 +10,7 @@ from object.object import Environment
 
 def check_type(expected_type: type, obj: object):
     if isinstance(obj, Error):
-        print(obj.message)
-        return None
+        return obj
     if not isinstance(obj, expected_type):
         raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
     return expected_type.copy(obj)
@@ -294,6 +293,27 @@ def test_function_application():
     return True
 
 
+def test_builtin_functions():
+    cases = [
+        ('len("")', 0),
+        ('len("four")', 4),
+        ('len("hello world")', 11),
+        ('len(1)', "argument to 'len' not supported, got INTEGER"),
+        ('len("one", "two")', "wrong number of arguments. got 2, want 1"),
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if isinstance(case[1], int):
+            if not test_integer_object(case[1], ret):
+                return False
+        else:
+            error = check_type(Error, ret)
+            if error.message != case[1]:
+                print(f'wrong error message. expected "{case[1]}" got "{error.message}"')
+                return False
+    return True
+
+
 if __name__ == '__main__':
     tests = [
         test_eval_integer_expression,
@@ -307,5 +327,6 @@ if __name__ == '__main__':
         test_function_application,
         test_string_literal,
         test_string_concat,
+        test_builtin_functions,
     ]
     run_cases(tests)

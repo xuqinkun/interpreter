@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Callable
 
 from monkey_ast import ast
 
@@ -12,6 +12,7 @@ RETURN_VALUE_OBJ = "RETURN_VALUE"
 ERROR_OBJ = "ERROR"
 FUNCTON_OBJ = "FUNCTION"
 STRING_OBJ = "STRING"
+BUILTIN_OBJ = "BUILTIN"
 
 
 class Object:
@@ -153,3 +154,14 @@ class String(Object):
     @classmethod
     def copy(cls, obj: Object):
         return cls(obj.value)
+
+
+@dataclass
+class Builtin(Object):
+    fn: Callable=None
+
+    def type(self) -> str:
+        return BUILTIN_OBJ
+
+    def inspect(self) -> str:
+        return "builtin function"

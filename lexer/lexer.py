@@ -79,7 +79,7 @@ class Lexer:
             tok = Token(LBRACE, ch)
         elif ch == '}':
             tok = Token(RBRACE, ch)
-        elif ch == '"':
+        elif ch == '"' or ch == "'":
             tok = Token(STRING, self.read_string())
         elif ch == NULL:
             tok = Token(EOF, ch)
@@ -110,7 +110,7 @@ class Lexer:
         start = self.curr + 1
         while True:
             self.read_char()
-            if self.ch == '"' or self.ch == NULL:
+            if self.ch == '"' or self.ch == NULL or self.ch == "'":
                 break
         return self.code[start: self.curr]
 

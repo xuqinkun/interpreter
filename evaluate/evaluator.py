@@ -2,6 +2,17 @@
 from typing import List
 from object.object import *
 
+def length(*args):
+    if len(args) != 1:
+        return Error(f"wrong number of arguments. got {len(args)}, want 1")
+    if isinstance(args[0], String):
+        return Integer(len(args[0].value))
+    return Error(f"argument to 'len' not supported, got {args[0].type()}")
+
+
+builtin_obj = {
+    "len": Builtin(fn=length)
+}
 
 def evaluate_statements(statements: list[ast.Statement], env: Environment):
     result = NULL
@@ -169,6 +180,8 @@ def evaluate(node: ast.Node, env: Environment):
 
 def eval_expressions(args: List[ast.Expression], env: Environment) -> []:
     result = []
+    if args is None:
+        return result
     for arg in args:
         ret = evaluate(arg, env)
         result.append(ret)
@@ -178,20 +191,28 @@ def eval_expressions(args: List[ast.Expression], env: Environment) -> []:
 
 
 def apply_function(func: Function, args: List[Object]):
-    env = Environment.new_enclosed_environment(func.env)
-    for i, param in enumerate(func.parameters):
-        env.put(param.value, args[i])
-    ret = evaluate(func.body, env)
-    if isinstance(ret, ReturnValue):
-        return ret.value
-    return ret
+    if isinstance(func, Builtin):
+        return func.fn(*args)
+    if isinstance(func, Function):
+        env = Environment.new_enclosed_environment(func.env)
+        for i, param in enumerate(func.parameters):
+            env.put(param.value, args[i])
+        ret = evaluate(func.body, env)
+        if isinstance(ret, ReturnValue):
+            return ret.value
+        return ret
+    return Error(f"not a function: {func.type()}")
 
 
 def eval_identifier(node: ast.Identifier, env: Environment):
     val = env.get(node.value)
-    if val == NULL:
-        return Error(f"identifier not found: {node.value}")
-    return val
+    if val != NULL:
+        return val
+    builtin = builtin_obj.get(node.value)
+    if builtin:
+        return builtin
+    return Error(f"identifier not found: {node.value}")
+
 
 
 def eval_if_expression(node: ast.IFExpression, env: Environment):
