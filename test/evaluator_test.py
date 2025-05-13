@@ -5,7 +5,7 @@ from lexer.lexer import get_lexer
 from monkey_parser.parser import *
 from evaluate.evaluator import evaluate
 from object.object import *
-from object.environment import Environment
+from object.object import Environment
 
 
 def check_type(expected_type: type, obj: object):
@@ -234,6 +234,24 @@ def test_let_statements():
     return True
 
 
+def test_function_object():
+    code = 'fn(x) { x + 2; };'
+    ret = get_eval(code)
+    fn = check_type(object.Function, ret)
+    parameters = fn.parameters
+    if len(parameters) != 1:
+        print(f'function has wrong params, params: {parameters}')
+        return False
+    if parameters[0].string() != 'x':
+        print(f"parameter is not 'x', got: {parameters[0]}")
+        return False
+    expected_body = '(x + 2)'
+    if fn.body.string() != expected_body:
+        print(f"body is not {expected_body}, got {fn.body.string()}")
+        return False
+    return True
+
+
 if __name__ == '__main__':
     tests = [
         test_eval_integer_expression,
@@ -243,5 +261,6 @@ if __name__ == '__main__':
         test_return_statements,
         test_error_handling,
         test_let_statements,
+        test_function_object,
     ]
     run_cases(tests)
