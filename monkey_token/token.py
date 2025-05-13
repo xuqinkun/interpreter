@@ -43,6 +43,8 @@ RPAREN = ")"
 LBRACE = "{"
 RBRACE = "}"
 
+STRING="STRING"
+
 BANG = "!"
 MINUS = "-"
 SLASH = "/"

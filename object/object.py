@@ -11,6 +11,7 @@ BOOLEAN_OBJ = "BOOLEAN"
 RETURN_VALUE_OBJ = "RETURN_VALUE"
 ERROR_OBJ = "ERROR"
 FUNCTON_OBJ = "FUNCTION"
+STRING_OBJ = "STRING"
 
 
 class Object:
@@ -137,3 +138,18 @@ class Function(Object):
     @classmethod
     def copy(cls, func: Object):
         return cls(func.parameters, func.body, func.env)
+
+
+@dataclass
+class String(Object):
+    value: str=None
+
+    def type(self) -> str:
+        return STRING_OBJ
+
+    def inspect(self) -> str:
+        return self.value
+
+    @classmethod
+    def copy(cls, obj: Object):
+        return cls(obj.value)

@@ -285,6 +285,8 @@ def test_operator_precedence_parsing():
         actual = program.string()
         if actual != code[1]:
             print(f"expected: {code[1]} got: {actual}")
+            return False
+    return True
 
 
 def test_identifier(exp: Expression, value: str):
@@ -429,6 +431,17 @@ def test_call_expression_parsing():
     return True
 
 
+def test_string_literal_expression():
+    code = '"hello world";'
+    program = parse(code)
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    literal = check_type(StringLiteral, stmt.expression)
+    if literal.value != 'hello world':
+        print(f'literal.value not hello world, got {literal.value}')
+        return False
+    return True
+
+
 def run_cases(cases: list[Callable]):
     for func in cases:
         if func():
@@ -451,6 +464,7 @@ if __name__ == '__main__':
         test_function_literal_parsing,
         test_function_parameter_parsing,
         test_call_expression_parsing,
+        test_string_literal_expression
     ]
     run_cases(cases)
     parse("add(1+2)*3")

@@ -9,6 +9,9 @@ from object.object import Environment
 
 
 def check_type(expected_type: type, obj: object):
+    if isinstance(obj, Error):
+        print(obj.message)
+        return None
     if not isinstance(obj, expected_type):
         raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
     return expected_type.copy(obj)
@@ -208,11 +211,12 @@ def test_error_handling():
     """,
             "unknown operator: BOOLEAN + BOOLEAN",
         ),
-        ("x", "identifier not found: x")
+        ("x", "identifier not found: x"),
+        ('"Hello"-"world!"', "unknown operator: STRING - STRING"),
     ]
     for case in cases:
         ret = get_eval(case[0])
-        if not isinstance(ret, object.Error):
+        if not isinstance(ret, Error):
             print(f'no error obj returned,got: {type(ret)}:{ret}')
             continue
         if ret.message != case[1]:
@@ -252,6 +256,28 @@ def test_function_object():
     return True
 
 
+def test_string_literal():
+    code = '"Hello world!"'
+    ret = get_eval(code)
+    string = check_type(object.String, ret)
+    if string.value != "Hello world!":
+        print(f'String has wrong value, got {string.value}')
+        return False
+    return True
+
+
+def test_string_concat():
+    code = '"Hello" + " " + "world!'
+    ret = get_eval(code)
+    string = check_type(object.String, ret)
+    if string is None:
+        return False
+    if string.value != "Hello world!":
+        print(f'String has wrong value, got {string.value}')
+        return False
+    return True
+
+
 def test_function_application():
     cases = [
         ("let identity = fn(x) { x; }; identity(5);", 5),
@@ -279,5 +305,7 @@ if __name__ == '__main__':
         test_let_statements,
         test_function_object,
         test_function_application,
+        test_string_literal,
+        test_string_concat,
     ]
     run_cases(tests)

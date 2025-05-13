@@ -49,10 +49,16 @@ def eval_minus_expression(right: Object):
 def eval_infix_expression(op: str, left: Object, right: Object):
     if isinstance(left, Integer) and isinstance(right, Integer):
         return eval_integer_infix_expression(op, left, right)
-    if isinstance(left, Boolean) and isinstance(right, Boolean):
+    elif isinstance(left, Boolean) and isinstance(right, Boolean):
         return eval_boolean_infix_expression(op, left, right)
+    elif isinstance(left, String) and isinstance(right, String):
+        return eval_string_infix_expression(op, left, right)
     return Error(f"type mismatch: {left.type()} {op} {right.type()}")
 
+def eval_string_infix_expression(op: str, left: Object, right: Object):
+    if op != '+':
+        return Error(f'unknown operator: {left.type()} {op} {right.type()}')
+    return String(left.value + right.value)
 
 def eval_integer_infix_expression(op: str, left: Object, right: Object):
     left_val = left.value
@@ -156,6 +162,8 @@ def evaluate(node: ast.Node, env: Environment):
         if len(arguments) == 1 and is_error(arguments[0]):
             return arguments[0]
         return apply_function(func, arguments)
+    elif isinstance(node, ast.StringLiteral):
+        return String(node.value)
     return NULL
 
 

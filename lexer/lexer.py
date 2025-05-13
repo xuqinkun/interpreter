@@ -79,6 +79,8 @@ class Lexer:
             tok = Token(LBRACE, ch)
         elif ch == '}':
             tok = Token(RBRACE, ch)
+        elif ch == '"':
+            tok = Token(STRING, self.read_string())
         elif ch == NULL:
             tok = Token(EOF, ch)
         else:
@@ -102,7 +104,14 @@ class Lexer:
         start = self.curr
         while is_digit(self.ch):
             self.read_char()
+        return self.code[start: self.curr]
 
+    def read_string(self):
+        start = self.curr + 1
+        while True:
+            self.read_char()
+            if self.ch == '"' or self.ch == NULL:
+                break
         return self.code[start: self.curr]
 
     def skip_whitespace(self):

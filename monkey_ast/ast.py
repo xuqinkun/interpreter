@@ -175,6 +175,28 @@ class IntegerLiteral(Expression):
 
 
 @dataclass
+class StringLiteral(Expression):
+    token: Token = None
+    value: str = None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        return self.value
+
+    def __repr__(self):
+        return self.value
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.value)
+
+
+@dataclass
 class PrefixExpression(Expression):
     token: Token = None
     operator: str = None
