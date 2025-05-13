@@ -13,16 +13,19 @@ def check_parser_errors(p: Parser):
         print(f'parse error:{err}')
     return True
 
-def check_len(expected_len:int, statements:list):
+
+def check_len(expected_len: int, statements: list):
     if expected_len != len(statements):
         print(f"Wrong statements number, expected {expected_len} got {len(statements)}")
         return False
     return True
 
+
 def check_type(expected_type: type, obj: object):
     if not isinstance(obj, expected_type):
         raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
     return expected_type.copy(obj)
+
 
 def parse(code):
     l = lexer.get_lexer(code)
@@ -30,6 +33,7 @@ def parse(code):
     program = p.parse_program()
     check_parser_errors(p)
     return program
+
 
 def test_let_statements():
     codes = [
@@ -61,6 +65,7 @@ def test_let_statement(s: Statement, name: str):
         print(f'let_stmt.name.literal not "{name}" got {let_stmt.name.literal}')
         return False
     return True
+
 
 def check_let_statements(stmt: Statement, name: str):
     if stmt.literal() != "let":
@@ -96,6 +101,7 @@ def test_return_statement():
             print(f'return_stmt.literal not return, got{return_stmt.literal()}')
     return True
 
+
 def test_identifier_expression():
     code = 'foobar;'
     program = parse(code)
@@ -123,6 +129,7 @@ def test_integer_literal_expression():
         raise Exception(f"literal.literal expected: '51', got: '{literal.literal()}'")
     return True
 
+
 def test_parsing_prefix_expressions():
     codes = [("!5;", "!", 5), ("-15;", "-", 15)]
     for code in codes:
@@ -136,6 +143,7 @@ def test_parsing_prefix_expressions():
             return False
     return True
 
+
 def test_integer_literal(exp: Expression, value: int):
     intl = check_type(IntegerLiteral, exp)
     if intl.value != value:
@@ -145,6 +153,7 @@ def test_integer_literal(exp: Expression, value: int):
         print(f'intl.literal not {value}. got {intl.literal()}')
         return False
     return True
+
 
 def test_parsing_infix_expressions():
     codes = [
@@ -160,7 +169,7 @@ def test_parsing_infix_expressions():
         ("true != false;", True, "!=", False),
         ("false == false;", False, "==", False),
     ]
-    for code in  codes:
+    for code in codes:
         program = parse(code[0])
         check_len(1, program.statements)
         statement = program.statements[0]
@@ -170,6 +179,7 @@ def test_parsing_infix_expressions():
         exp = InfixExpression.copy(exp=stmt.expression)
         test_infix_expression(exp, code[1], code[2], code[3])
     return True
+
 
 def test_operator_precedence_parsing():
     codes = [
@@ -299,6 +309,7 @@ def test_literal_expression(exp: Expression, expected: object):
     print(f'type of exp not handled. got{expected_type}')
     return False
 
+
 def test_infix_expression(exp: Expression, left: object,
                           operator: str, right: object):
     op_exp = check_type(InfixExpression, exp)
@@ -321,6 +332,7 @@ def test_boolean_expression(exp: Expression, value: bool):
         print(f"literal not {value} got: {exp.literal()}")
         return False
     return True
+
 
 def test_if_expression():
     code = "if (x < y) {x}"
@@ -400,6 +412,7 @@ def test_function_parameter_parsing():
                 return False
     return True
 
+
 def test_call_expression_parsing():
     code = "add(1, 2*3, 4+5);"
     program = parse(code)
@@ -422,6 +435,7 @@ def run_cases(cases: list[Callable]):
             print(f'{func.__name__} passed!')
         else:
             print(f'{func.__name__} failed!')
+
 
 if __name__ == '__main__':
     cases = [

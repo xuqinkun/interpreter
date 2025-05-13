@@ -5,10 +5,10 @@ from dataclasses import dataclass
 @dataclass
 class Lexer:
     code: str
-    ch: str=''
-    curr: int=-1
-    next: int=0
-    lino: int=0
+    ch: str = ''
+    curr: int = -1
+    next: int = 0
+    lino: int = 0
 
     def __str__(self):
         return f"Lexer(curr={self.curr}, next={self.next}, peek='{self.ch}')"

@@ -9,7 +9,6 @@ class Timer:
         self._total = None
         self._start = None
 
-
     def start(self):
         self._start = time.time() * MILLISECONDS
 

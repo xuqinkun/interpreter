@@ -110,6 +110,7 @@ def is_error(obj: object.Object):
         return obj.type() == object.ERROR_OBJ
     return False
 
+
 def evaluate(node: ast.Node, env: Environment):
     if isinstance(node, ast.IntegerLiteral):
         return object.Integer(node.value)
@@ -150,11 +151,13 @@ def evaluate(node: ast.Node, env: Environment):
         return eval_identifier(node, env)
     return NULL
 
+
 def eval_identifier(node: ast.Identifier, env: Environment):
     val = env.get(node.value)
     if val == NULL:
         return object.Error(f"identifier not found: {node.value}")
     return val
+
 
 def eval_if_expression(node: ast.IFExpression, env: Environment):
     condition = evaluate(node.condition, env)
