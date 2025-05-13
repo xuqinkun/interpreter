@@ -263,6 +263,9 @@ class BlockStatement(Statement):
             lines.append(stmt.string())
         return "".join(lines)
 
+    def __repr__(self):
+        return self.string()
+
 
 @dataclass
 class IFExpression(Expression):
@@ -335,6 +338,9 @@ class CallExpression(Expression):
         for arg in self.arguments:
             args.append(arg.string())
         return f"{self.function.string()}({', '.join(args)})"
+
+    def __repr__(self):
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):

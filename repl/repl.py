@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from evaluate.evaluator import evaluate, NULL
 from monkey_parser.parser import parse
-from object.environment import Environment
+from object.object import Environment
 
 PROMPT = ">>"
 

@@ -94,16 +94,26 @@ FALSE = Boolean(False)
 
 class Environment:
     store: Dict[str, Object] = None
+    outer: 'Environment' = None
 
     def __init__(self):
         self.store = {}
 
     def get(self, name: str) -> Object:
-        return self.store.get(name, NULL)
+        val = self.store.get(name, NULL)
+        if val == NULL and self.outer:
+            val = self.outer.get(name)
+        return val
 
     def put(self, name: str, obj: Object) -> Object:
         self.store[name] = obj
         return obj
+
+    @classmethod
+    def new_enclosed_environment(cls, outer: 'Environment'):
+        env = cls()
+        env.outer = outer
+        return env
 
 
 @dataclass
@@ -120,6 +130,9 @@ class Function(Object):
         for param in self.parameters:
             params.append(param.string())
         return f"fn({', '.join(params)}) {{\n{self.body.string()}\n}}"
+
+    def __repr__(self):
+        return self.inspect()
 
     @classmethod
     def copy(cls, func: Object):

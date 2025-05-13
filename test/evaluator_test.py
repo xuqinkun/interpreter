@@ -252,6 +252,22 @@ def test_function_object():
     return True
 
 
+def test_function_application():
+    cases = [
+        ("let identity = fn(x) { x; }; identity(5);", 5),
+        ("let identity = fn(x) { return x; }; identity(5);", 5),
+        ("let double = fn(x) { x * 2; }; double(5);", 10),
+        ("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
+        ("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
+        ("fn(x) { x; }(5)", 5),
+    ]
+    for case in cases:
+        ret = get_eval(case[0])
+        if not test_integer_object(case[1], ret):
+            return False
+    return True
+
+
 if __name__ == '__main__':
     tests = [
         test_eval_integer_expression,
@@ -262,5 +278,6 @@ if __name__ == '__main__':
         test_error_handling,
         test_let_statements,
         test_function_object,
+        test_function_application,
     ]
     run_cases(tests)

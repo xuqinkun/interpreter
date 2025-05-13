@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import List
+
 from object.object import *
 
 
@@ -147,7 +149,35 @@ def evaluate(node: ast.Node, env: Environment):
         params = node.parameters
         body = node.body
         return Function(parameters=params, body=body, env=env)
+    elif isinstance(node, ast.CallExpression):
+        func = evaluate(node.function, env)
+        if is_error(func):
+            return func
+        arguments = eval_expressions(node.arguments, env)
+        if len(arguments) == 1 and is_error(arguments[0]):
+            return arguments[0]
+        return apply_function(func, arguments)
     return NULL
+
+
+def eval_expressions(args: List[ast.Expression], env: Environment) -> []:
+    result = []
+    for arg in args:
+        ret = evaluate(arg, env)
+        result.append(ret)
+        if is_error(ret):
+            return result
+    return result
+
+
+def apply_function(func: Function, args: List[Object]):
+    env = Environment.new_enclosed_environment(func.env)
+    for i, param in enumerate(func.parameters):
+        env.put(param.value, args[i])
+    ret = evaluate(func.body, env)
+    if isinstance(ret, ReturnValue):
+        return ret.value
+    return ret
 
 
 def eval_identifier(node: ast.Identifier, env: Environment):
