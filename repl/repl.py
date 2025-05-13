@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+import sys
 from evaluate.evaluator import evaluate, NULL
 from monkey_parser.parser import parse
 from object.object import Environment
 
 PROMPT = ">>"
+
+sys.setrecursionlimit(2000)
 
 
 def match_eof(code: str):
