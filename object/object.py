@@ -14,7 +14,22 @@ FUNCTON_OBJ = "FUNCTION"
 STRING_OBJ = "STRING"
 BUILTIN_OBJ = "BUILTIN"
 ARRAY_OBJ = "ARRAY"
+HASH_OBJ = "HASH"
 
+
+@dataclass
+class HashKey:
+    key_type: str = None
+    value: int = 0
+
+
+def fnv1a_64(data):
+    h = 0xcbf29ce484222325
+    for b in data:
+        h ^= b
+        h *= 0x100000001b3
+        h &= 0xFFFFFFFFFFFFFFFF
+    return h
 
 class Object:
     value = None
@@ -41,6 +56,9 @@ class Integer(Object):
     def __repr__(self):
         return self.inspect()
 
+    def hash_key(self) -> HashKey:
+        return HashKey(self.type(), value=self.value)
+
     @classmethod
     def copy(cls, obj: Object):
         return cls(obj.value)
@@ -55,6 +73,13 @@ class Boolean(Object):
 
     def inspect(self) -> str:
         return str(self.value).lower()
+
+    def hash_key(self):
+        if self.value:
+            value = 1
+        else:
+            value = 0
+        return HashKey(self.type(), value)
 
     @classmethod
     def copy(cls, obj: Object):
@@ -147,7 +172,7 @@ class Function(Object):
 
 @dataclass
 class String(Object):
-    value: str=None
+    value: str = None
 
     def type(self) -> str:
         return STRING_OBJ
@@ -159,10 +184,14 @@ class String(Object):
     def copy(cls, obj: Object):
         return cls(obj.value)
 
+    def hash_key(self) -> HashKey:
+        hash_value = fnv1a_64(self.value.encode('utf-8'))
+        return HashKey(self.type(), hash_value)
+
 
 @dataclass
 class Builtin(Object):
-    fn: Callable=None
+    fn: Callable = None
 
     def type(self) -> str:
         return BUILTIN_OBJ
@@ -170,9 +199,10 @@ class Builtin(Object):
     def inspect(self) -> str:
         return "builtin function"
 
+
 @dataclass
 class Array(Object):
-    elements: list[Object]=None
+    elements: list[Object] = None
 
     def type(self) -> str:
         return ARRAY_OBJ
@@ -186,4 +216,26 @@ class Array(Object):
     def __repr__(self):
         return self.inspect()
 
+
+@dataclass
+class HashPair:
+    key: Object=None
+    value: Object=None
+
+
+@dataclass
+class Hash(Object):
+    pairs: Dict[HashKey, HashPair] = None
+
+    def type(self) -> str:
+        return HASH_OBJ
+
+    def inspect(self) -> str:
+        pairs = []
+        for (_, pair) in self.pairs.items():
+            pairs.append(f"{pair.key.inspect()}: {pair.value.inspect()}")
+        return f"{{{', '.join(pairs)}}}"
+
+    def __repr__(self):
+        return self.inspect()
 

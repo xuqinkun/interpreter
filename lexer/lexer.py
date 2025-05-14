@@ -85,6 +85,8 @@ class Lexer:
             tok = Token(RBRACKET, ch)
         elif ch == '"' or ch == "'":
             tok = Token(STRING, self.read_string())
+        elif ch == ':':
+            tok = Token(COLON, ch)
         elif ch == NULL:
             tok = Token(EOF, ch)
         else:

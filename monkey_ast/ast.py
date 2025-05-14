@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Dict
 
 from monkey_token.token import Token
 
@@ -78,6 +79,9 @@ class Identifier(Expression):
 
     def string(self):
         return self.value
+
+    def __hash__(self):
+        return hash(self.value)
 
     def expression(self):
         pass
@@ -187,6 +191,9 @@ class StringLiteral(Expression):
 
     def string(self):
         return self.value
+
+    def __hash__(self):
+        return hash(self.value)
 
     def __repr__(self):
         return self.value
@@ -389,6 +396,28 @@ class ArrayLiteral(Expression):
     @classmethod
     def copy(cls, exp: Expression):
         return cls(exp.token, exp.elements)
+
+
+@dataclass
+class HashLiteral(Expression):
+    token: Token=None
+    pairs: Dict[Expression, Expression]=None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        pairs = {}
+        for key, val in self.pairs:
+            pairs[key] = val
+        return f"[{', '.join(pairs)}]"
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.pairs)
 
 
 @dataclass

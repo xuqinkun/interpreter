@@ -1,5 +1,6 @@
 from smtpd import program
 from typing import Callable
+
 from lexer import lexer
 from monkey_ast.ast import *
 from monkey_parser.parser import Parser
@@ -477,6 +478,47 @@ def test_parsing_index_expression():
     return True
 
 
+def test_parsing_hash_literal_string_key():
+    code = """{"one":1, "two":2, "three":3}"""
+    program = parse(code)
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    entry = check_type(HashLiteral, stmt.expression)
+    check_len(3, entry.pairs)
+    expected = {"one": 1, "two": 2, "three": 3}
+    for (key, value) in entry.pairs.items():
+        if not isinstance(key, StringLiteral):
+            print(f"key is not StringLiteral. got {key}")
+            return False
+        if not test_integer_literal(value, expected[key.string()]):
+            return False
+    return True
+
+
+def test_parsing_hash_literal_string_with_expressions():
+    code = """{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"""
+    program = parse(code)
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    entry = check_type(HashLiteral, stmt.expression)
+    check_len(3, entry.pairs)
+    expected = {"one": (0, '+' ,1), "two": (10, '-' ,8), "three": (15, '/' ,5)}
+    for key, value in entry.pairs:
+        if not isinstance(key, StringLiteral):
+            print(f"key is not StringLiteral. got {key}")
+            return False
+        if not test_infix_expression(expected[key.string()], *value):
+            return False
+    return True
+
+
+def test_parsing_empty_hash_literal():
+    code = "{}"
+    program = parse(code)
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    entry = check_type(HashLiteral, stmt.expression)
+    check_len(0, entry.pairs)
+    return True
+
+
 def run_cases(cases: list[Callable]):
     for func in cases:
         if func():
@@ -502,6 +544,8 @@ if __name__ == '__main__':
         test_string_literal_expression,
         test_parsing_array_literals,
         test_parsing_index_expression,
+        test_parsing_hash_literal_string_key,
+        test_parsing_empty_hash_literal,
     ]
     run_cases(cases)
     parse("add(1+2)*3")

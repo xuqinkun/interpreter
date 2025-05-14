@@ -235,7 +235,21 @@ def evaluate(node: ast.Node, env: Environment):
         if is_error(index):
             return index
         return eval_index_expression(left, index)
+    elif isinstance(node, ast.HashLiteral):
+        return eval_hash_literal(node, env)
     return NULL
+
+
+def eval_hash_literal(node: ast.HashLiteral, env: Environment):
+    pairs = {}
+    for key_node, val_node in node.pairs.items():
+        key = evaluate(key_node, env)
+        if is_error(key):
+            return key
+        value = evaluate(val_node, env)
+        hashed = key.hash_key()
+        pairs[hashed] = HashPair(key, value)
+    return Hash(pairs)
 
 
 def eval_index_expression(arr: Array, index: Object):

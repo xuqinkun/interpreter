@@ -42,10 +42,10 @@ precedences = {
 @dataclass
 class Parser:
     # 定义函数类型别名
-    PrefixParseFn = Callable[[], Expression]
-    InfixParseFn = Callable[[Expression], Expression]
+    PrefixParseFn=Callable[[], Expression]
+    InfixParseFn=Callable[[Expression], Expression]
 
-    lexer: Lexer
+    lexer: Lexer=None
     line: int = 0
     errors: list[str] = None
     curr: Token = ''
@@ -304,9 +304,27 @@ class Parser:
             return True
         return exp
 
+    def parse_hash_literal(self):
+        hs = HashLiteral(self.curr)
+        hs.pairs = {}
+        while not self.peek_token_is(RBRACE):
+            self.next_token()
+            key = self.parse_expression(Precedence.LOWEST)
+            if not self.expect_peek(COLON):
+                return None
+            self.next_token()
+            val = self.parse_expression(Precedence.LOWEST)
+            hs.pairs[key] = val
+            if not self.peek_token_is(RBRACE) and not self.expect_peek(COMMA):
+                return None
+        if not self.expect_peek(RBRACE):
+            return None
+        return hs
+
     @staticmethod
     def get_parser(lex: Lexer):
-        p = Parser(lex)
+        p = Parser()
+        p.lexer = lex
         p.errors = []
         p.prefix_parse_fns = {}
         p.infix_parse_fns = {}
@@ -348,6 +366,8 @@ class Parser:
         p.register_prefix(FUNCTION, p.parse_function_literal)
         # 调用表达式
         p.register_infix(LPAREN, p.parse_call_expression)
+        # 哈希
+        p.register_prefix(LBRACE, p.parse_hash_literal)
         # 将curr指向第一个token
         p.next_token()
         p.next_token()

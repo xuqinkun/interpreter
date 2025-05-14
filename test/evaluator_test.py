@@ -385,6 +385,38 @@ def test_array_index_expression():
     return True
 
 
+def test_hash_literal():
+    code = """let two = "two";
+        {"one": 10 - 9,
+        two: 1 + 1,
+        "thr" + "ee": 6 / 2,
+        4: 4,
+        true: 5,
+        false: 6}
+    """
+    ret = get_eval(code)
+    if not isinstance(ret, Hash):
+        print(f"eval didn't return Hash. got {type(ret)}:{ret}")
+        return False
+    expected = {
+        String("one").hash_key() : 1,
+        String("two").hash_key() : 2,
+        String("three").hash_key() : 3,
+        Integer(4).hash_key() : 4,
+        TRUE.hash_key() : 5,
+        FALSE.hash_key() : 6,
+    }
+    if len(expected) != len(ret.pairs):
+        print(f"Hash has wrong num of pairs. got {len(ret.pairs)}")
+        return False
+    for exp_key, exp_val in expected.items():
+        pair = ret.pairs.get(exp_key, None)
+        if pair is None:
+            print(f"no pair for given key[{exp_key}] in pairs")
+            return False
+        if not test_integer_object(exp_val, pair.value):
+            return False
+    return True
 
 if __name__ == '__main__':
     tests = [
@@ -402,6 +434,6 @@ if __name__ == '__main__':
         test_builtin_functions,
         test_array_literal,
         test_array_index_expression,
-
+        test_hash_literal
     ]
     run_cases(tests)

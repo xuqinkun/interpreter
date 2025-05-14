@@ -119,6 +119,7 @@ if (5 < 10) {
 "foobar"
 "foo bar"
 [1, 2];
+{"foo":"bar"}
     """
     tokens = [Token(LET, "let"),
               Token(IDENT, "five"),
@@ -201,6 +202,11 @@ if (5 < 10) {
               Token(INT, "2"),
               Token(RBRACKET, "]"),
               Token(SEMICOLON, ";"),
+              Token(LBRACE, "{"),
+              Token(STRING, "foo"),
+              Token(COLON, ":"),
+              Token(STRING, "bar"),
+              Token(RBRACE, "}"),
               Token(EOF, NULL)]
     check(tokens, lexer=get_lexer(code))
     print(f'Run {func_name} ok!\tTake: {timer.elapse()}')
