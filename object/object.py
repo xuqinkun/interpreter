@@ -22,6 +22,9 @@ class HashKey:
     key_type: str = None
     value: int = 0
 
+    def __hash__(self):
+        return hash(self.key_type) + hash(self.value)
+
 
 def fnv1a_64(data):
     h = 0xcbf29ce484222325
@@ -30,6 +33,7 @@ def fnv1a_64(data):
         h *= 0x100000001b3
         h &= 0xFFFFFFFFFFFFFFFF
     return h
+
 
 class Object:
     value = None
@@ -180,6 +184,9 @@ class String(Object):
     def inspect(self) -> str:
         return self.value
 
+    def __repr__(self):
+        return self.value
+
     @classmethod
     def copy(cls, obj: Object):
         return cls(obj.value)
@@ -219,8 +226,8 @@ class Array(Object):
 
 @dataclass
 class HashPair:
-    key: Object=None
-    value: Object=None
+    key: Object = None
+    value: Object = None
 
 
 @dataclass
@@ -238,4 +245,3 @@ class Hash(Object):
 
     def __repr__(self):
         return self.inspect()
-

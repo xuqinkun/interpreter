@@ -42,10 +42,10 @@ precedences = {
 @dataclass
 class Parser:
     # 定义函数类型别名
-    PrefixParseFn=Callable[[], Expression]
-    InfixParseFn=Callable[[Expression], Expression]
+    PrefixParseFn = Callable[[], Expression]
+    InfixParseFn = Callable[[Expression], Expression]
 
-    lexer: Lexer=None
+    lexer: Lexer = None
     line: int = 0
     errors: list[str] = None
     curr: Token = ''

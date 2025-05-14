@@ -331,6 +331,7 @@ def test_array_literal():
         return False
     return True
 
+
 def test_array_index_expression():
     cases = [
         (
@@ -399,12 +400,12 @@ def test_hash_literal():
         print(f"eval didn't return Hash. got {type(ret)}:{ret}")
         return False
     expected = {
-        String("one").hash_key() : 1,
-        String("two").hash_key() : 2,
-        String("three").hash_key() : 3,
-        Integer(4).hash_key() : 4,
-        TRUE.hash_key() : 5,
-        FALSE.hash_key() : 6,
+        String("one").hash_key(): 1,
+        String("two").hash_key(): 2,
+        String("three").hash_key(): 3,
+        Integer(4).hash_key(): 4,
+        TRUE.hash_key(): 5,
+        FALSE.hash_key(): 6,
     }
     if len(expected) != len(ret.pairs):
         print(f"Hash has wrong num of pairs. got {len(ret.pairs)}")
@@ -417,6 +418,42 @@ def test_hash_literal():
         if not test_integer_object(exp_val, pair.value):
             return False
     return True
+
+
+def test_hash_index_expression():
+    cases = [
+        (
+            '{"foo": 5}["foo"]', 5),
+        (
+            '{"foo": 5}["bar"]',
+            None,
+        ), (
+            'let key = "foo"; {"foo": 5}[key]',
+            5,
+        ), (
+            '{}["foo"]',
+            None,
+        ), (
+            '{5: 5}[5]',
+            5,
+        ), (
+            '{true: 5}[true]',
+            5,
+        ), (
+            '{false: 5}[false]',
+            5,
+        ),
+    ]
+    for code, expected in cases:
+        ret = get_eval(code)
+        if type(expected) == int:
+            status = test_integer_object(expected, ret)
+        else:
+            status = test_null_object(ret)
+        if not status:
+            return False
+    return True
+
 
 if __name__ == '__main__':
     tests = [
@@ -434,6 +471,7 @@ if __name__ == '__main__':
         test_builtin_functions,
         test_array_literal,
         test_array_index_expression,
-        test_hash_literal
+        test_hash_literal,
+        test_hash_index_expression
     ]
     run_cases(tests)

@@ -2,6 +2,7 @@
 from typing import List
 from object.object import *
 
+
 def length(*args):
     arg = args[0]
     if len(args) != 1:
@@ -11,6 +12,7 @@ def length(*args):
     elif isinstance(arg, Array):
         return Integer(len(arg.elements))
     return Error(f"argument to 'len' not supported, got {arg.type()}")
+
 
 def first(*args):
     arg = args[0]
@@ -22,6 +24,7 @@ def first(*args):
         return arg.elements[0]
     return NULL
 
+
 def last(*args):
     arg = args[0]
     if len(args) != 1:
@@ -32,6 +35,7 @@ def last(*args):
         return arg.elements[-1]
     return NULL
 
+
 def rest(*args):
     arg = args[0]
     if len(args) != 1:
@@ -41,6 +45,7 @@ def rest(*args):
     if len(arg.elements) > 0:
         return Array(arg.elements[1:])
     return NULL
+
 
 def push(*args):
     arg = args[0]
@@ -53,6 +58,7 @@ def push(*args):
     new_arr.append(obj)
     return Array(new_arr)
 
+
 builtin_obj = {
     "len": Builtin(fn=length),
     "first": Builtin(fn=first),
@@ -60,6 +66,7 @@ builtin_obj = {
     "rest": Builtin(fn=rest),
     "push": Builtin(fn=push),
 }
+
 
 def evaluate_statements(statements: list[ast.Statement], env: Environment):
     result = NULL
@@ -113,10 +120,12 @@ def eval_infix_expression(op: str, left: Object, right: Object):
         return eval_string_infix_expression(op, left, right)
     return Error(f"type mismatch: {left.type()} {op} {right.type()}")
 
+
 def eval_string_infix_expression(op: str, left: Object, right: Object):
     if op != '+':
         return Error(f'unknown operator: {left.type()} {op} {right.type()}')
     return String(left.value + right.value)
+
 
 def eval_integer_infix_expression(op: str, left: Object, right: Object):
     left_val = left.value
@@ -252,15 +261,29 @@ def eval_hash_literal(node: ast.HashLiteral, env: Environment):
     return Hash(pairs)
 
 
-def eval_index_expression(arr: Array, index: Object):
-    if arr.type() == ARRAY_OBJ and index.type() == INTEGER_OBJ:
-        idx = index.value
-        max_len = len(arr.elements)
-        if idx < 0 or idx >= max_len:
-            return NULL
-        return arr.elements[idx]
+def eval_index_expression(left: Object, index: Object):
+    if left.type() == ARRAY_OBJ and index.type() == INTEGER_OBJ:
+        return eval_array_index_expression(left, index)
+    elif left.type() == HASH_OBJ:
+        return eval_hash_index_expression(left, index)
     else:
-        return Error(f"index operator not supported: {arr.type()}")
+        return Error(f"index operator not supported: {left.type()}")
+
+
+def eval_hash_index_expression(left: Hash, index: String):
+    pair = left.pairs.get(index.hash_key(), NULL)
+    if pair is NULL:
+        return pair
+    return pair.value
+
+
+def eval_array_index_expression(left: Array, index: Object):
+    idx = index.value
+    max_len = len(left.elements)
+    if idx < 0 or idx >= max_len:
+        return NULL
+    return left.elements[idx]
+
 
 def eval_expressions(args: List[ast.Expression], env: Environment) -> []:
     result = []
@@ -296,7 +319,6 @@ def eval_identifier(node: ast.Identifier, env: Environment):
     if builtin:
         return builtin
     return Error(f"identifier not found: {node.value}")
-
 
 
 def eval_if_expression(node: ast.IFExpression, env: Environment):

@@ -66,6 +66,7 @@ class Program:
     def __repr__(self):
         return self.string()
 
+
 @dataclass
 class Identifier(Expression):
     token: Token
@@ -114,6 +115,7 @@ class LetStatement(Statement):
     def copy(cls, stmt: Statement):
         return cls(stmt.token, stmt.name, stmt.value)
 
+
 @dataclass
 class ReturnStatement(Statement):
     token: Token = None
@@ -153,7 +155,7 @@ class ExpressionStatement(Statement):
     def __repr__(self):
         if self.expression is None:
             return self.token.literal
-        return self.string()
+        return f"{self.string()}"
 
 
 @dataclass
@@ -169,6 +171,9 @@ class IntegerLiteral(Expression):
 
     def string(self):
         return str(self.value)
+
+    def __hash__(self):
+        return hash(self.value)
 
     def __repr__(self):
         return str(self.value)
@@ -190,13 +195,13 @@ class StringLiteral(Expression):
         return self.token.literal
 
     def string(self):
-        return self.value
+        return f'"{self.value}"'
 
     def __hash__(self):
         return hash(self.value)
 
     def __repr__(self):
-        return self.value
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
@@ -249,6 +254,9 @@ class InfixExpression(Expression):
     def expression(self):
         pass
 
+    def __hash__(self):
+        return hash(self.operator) + hash(self.left) + hash(self.right)
+
     def __repr__(self):
         return self.string()
 
@@ -266,6 +274,9 @@ class Boolean(Expression):
 
     def string(self):
         return self.token.literal
+
+    def __hash__(self):
+        return hash(self.value)
 
     def __repr__(self):
         return self.string()
@@ -378,8 +389,8 @@ class CallExpression(Expression):
 
 @dataclass
 class ArrayLiteral(Expression):
-    token: Token=None
-    elements: list[Expression]=None
+    token: Token = None
+    elements: list[Expression] = None
 
     def expression(self):
         pass
@@ -400,8 +411,8 @@ class ArrayLiteral(Expression):
 
 @dataclass
 class HashLiteral(Expression):
-    token: Token=None
-    pairs: Dict[Expression, Expression]=None
+    token: Token = None
+    pairs: Dict[Expression, Expression] = None
 
     def expression(self):
         pass
@@ -411,9 +422,16 @@ class HashLiteral(Expression):
 
     def string(self):
         pairs = {}
-        for key, val in self.pairs:
-            pairs[key] = val
-        return f"[{', '.join(pairs)}]"
+        for key, val in self.pairs.items():
+            if isinstance(key, str):
+                pairs[key] = val.string()
+            else:
+                pairs[key.string()] = val.string()
+        joined_items = ",".join(f"{k}:{v}" for k, v in pairs.items())
+        return f"{{{joined_items}}}"
+
+    def __repr__(self):
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
@@ -422,9 +440,9 @@ class HashLiteral(Expression):
 
 @dataclass
 class IndexExpression(Expression):
-    token: Token=None
-    left: Expression=None
-    index: Expression=None
+    token: Token = None
+    left: Expression = None
+    index: Expression = None
 
     def expression(self):
         pass
@@ -433,8 +451,10 @@ class IndexExpression(Expression):
         return self.token.literal
 
     def string(self):
-
         return f"({self.left.string()}[{self.index.string()}])"
+
+    def __repr__(self):
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
