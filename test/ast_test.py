@@ -10,7 +10,10 @@ def test_string():
     code = program.string()
     if code != 'let var = anotherVar;':
         print(f"program.string() wrong. got={code}")
+        return False
+    return True
 
 
 if __name__ == '__main__':
-    test_string()
+    if test_string():
+        print('Passed')

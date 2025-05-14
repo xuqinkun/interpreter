@@ -195,7 +195,7 @@ class StringLiteral(Expression):
         return self.token.literal
 
     def string(self):
-        return f'"{self.value}"'
+        return f'{self.value}'
 
     def __hash__(self):
         return hash(self.value)

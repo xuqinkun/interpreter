@@ -1,4 +1,3 @@
-from smtpd import program
 from typing import Callable
 
 from lexer import lexer
@@ -519,8 +518,8 @@ def test_parsing_empty_hash_literal():
     return True
 
 
-def run_cases(cases: list[Callable]):
-    for func in cases:
+def run_cases(funcs: list[Callable]):
+    for func in funcs:
         if func():
             print(f'{func.__name__} passed!')
         else:
@@ -548,4 +547,3 @@ if __name__ == '__main__':
         test_parsing_empty_hash_literal,
     ]
     run_cases(cases)
-    parse("add(1+2)*3")
