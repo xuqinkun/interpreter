@@ -242,4 +242,414 @@ for i, tt := range tests {
 6. **错误处理**：对无法识别的字符标记为ILLEGAL
 
 这一章为解释器开发奠定了重要基础，下一章通常会在此基础上构建解析器（Parser）来处理这些token并构建抽象语法树（AST）。
-## Chapter2 语法分析
+
+
+# 第2章：解析器与抽象语法树（AST）
+
+第2章通常在第1章词法分析器的基础上，介绍如何构建解析器（Parser）和抽象语法树（AST），这是解释器/编译器工作的核心组成部分。
+
+## 1. 解析器基础
+
+- **解析器的职责**：
+  - 接收词法分析器产生的token流
+  - 验证语法是否符合语言规范
+  - 构建抽象语法树（AST）表示程序结构
+
+- **两种主要解析策略**：
+  - 自顶向下解析（递归下降）
+  - 自底向上解析（本书采用递归下降方法）
+
+## 2. 抽象语法树（AST）
+
+- **AST的作用**：
+  - 以树状结构表示源代码的语法
+  - 省略不必要的细节（如分号、括号等）
+  - 便于后续分析和执行
+
+- **AST与具体语法树（CST）的区别**：
+  - CST包含所有语法细节
+  - AST只保留语义关键信息
+
+## 3. 解析器实现
+
+## 3.1 定义AST节点接口
+
+```go
+type Node interface {
+    TokenLiteral() string
+    String() string
+}
+
+type Statement interface {
+    Node
+    statementNode()
+}
+
+type Expression interface {
+    Node
+    expressionNode()
+}
+```
+
+## 3.2 基本AST节点结构
+
+**程序根节点**：
+```go
+type Program struct {
+    Statements []Statement
+}
+
+func (p *Program) TokenLiteral() string {
+    if len(p.Statements) > 0 {
+        return p.Statements[0].TokenLiteral()
+    }
+    return ""
+}
+```
+
+**Let语句**：
+```go
+type LetStatement struct {
+    Token token.Token // token.LET
+    Name  *Identifier
+    Value Expression
+}
+
+func (ls *LetStatement) statementNode() {}
+func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
+```
+
+**Return语句**：
+```go
+type ReturnStatement struct {
+    Token       token.Token // token.RETURN
+    ReturnValue Expression
+}
+
+func (rs *ReturnStatement) statementNode() {}
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
+```
+
+**表达式语句**：
+```go
+type ExpressionStatement struct {
+    Token      token.Token // 表达式的第一个token
+    Expression Expression
+}
+
+func (es *ExpressionStatement) statementNode() {}
+func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
+```
+
+**标识符表达式**：
+```go
+type Identifier struct {
+    Token token.Token // token.IDENT
+    Value string
+}
+
+func (i *Identifier) expressionNode() {}
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+```
+
+## 3.3 解析器结构
+
+```go
+type Parser struct {
+    l      *lexer.Lexer
+    errors []string
+
+    curToken  token.Token
+    peekToken token.Token
+}
+```
+
+## 3.4 解析器初始化
+
+```go
+func New(l *lexer.Lexer) *Parser {
+    p := &Parser{
+        l:      l,
+        errors: []string{},
+    }
+
+    // 读取两个token，初始化curToken和peekToken
+    p.nextToken()
+    p.nextToken()
+
+    return p
+}
+
+func (p *Parser) nextToken() {
+    p.curToken = p.peekToken
+    p.peekToken = p.l.NextToken()
+}
+```
+
+## 3.5 解析程序入口
+
+```go
+func (p *Parser) ParseProgram() *ast.Program {
+    program := &ast.Program{}
+    program.Statements = []ast.Statement{}
+
+    for p.curToken.Type != token.EOF {
+        stmt := p.parseStatement()
+        if stmt != nil {
+            program.Statements = append(program.Statements, stmt)
+        }
+        p.nextToken()
+    }
+
+    return program
+}
+```
+
+## 3.6 解析语句
+
+```go
+func (p *Parser) parseStatement() ast.Statement {
+    switch p.curToken.Type {
+    case token.LET:
+        return p.parseLetStatement()
+    case token.RETURN:
+        return p.parseReturnStatement()
+    default:
+        return p.parseExpressionStatement()
+    }
+}
+```
+
+**解析Let语句**：
+```go
+func (p *Parser) parseLetStatement() *ast.LetStatement {
+    stmt := &ast.LetStatement{Token: p.curToken}
+
+    if !p.expectPeek(token.IDENT) {
+        return nil
+    }
+
+    stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+    if !p.expectPeek(token.ASSIGN) {
+        return nil
+    }
+
+    p.nextToken()
+
+    stmt.Value = p.parseExpression(LOWEST)
+
+    if p.peekTokenIs(token.SEMICOLON) {
+        p.nextToken()
+    }
+
+    return stmt
+}
+```
+
+**辅助函数**：
+```go
+func (p *Parser) curTokenIs(t token.TokenType) bool {
+    return p.curToken.Type == t
+}
+
+func (p *Parser) peekTokenIs(t token.TokenType) bool {
+    return p.peekToken.Type == t
+}
+
+func (p *Parser) expectPeek(t token.TokenType) bool {
+    if p.peekTokenIs(t) {
+        p.nextToken()
+        return true
+    } else {
+        p.peekError(t)
+        return false
+    }
+}
+```
+
+## 4. 表达式解析
+
+## 4.1 表达式优先级
+
+```go
+const (
+    _ int = iota
+    LOWEST
+    EQUALS      // ==
+    LESSGREATER // > or <
+    SUM        // +
+    PRODUCT     // *
+    PREFIX      // -X or !X
+    CALL        // myFunction(X)
+)
+```
+
+## 4.2 前缀表达式
+
+```go
+type PrefixExpression struct {
+    Token    token.Token // 前缀token，如!
+    Operator string
+    Right    Expression
+}
+
+func (pe *PrefixExpression) expressionNode() {}
+func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
+```
+
+**解析前缀表达式**：
+```go
+func (p *Parser) parsePrefixExpression() ast.Expression {
+    expression := &ast.PrefixExpression{
+        Token:    p.curToken,
+        Operator: p.curToken.Literal,
+    }
+
+    p.nextToken()
+
+    expression.Right = p.parseExpression(PREFIX)
+
+    return expression
+}
+```
+
+## 4.3 中缀表达式
+
+```go
+type InfixExpression struct {
+    Token    token.Token // 运算符token，如+
+    Left     Expression
+    Operator string
+    Right    Expression
+}
+
+func (ie *InfixExpression) expressionNode() {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+```
+
+**解析中缀表达式**：
+```go
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+    expression := &ast.InfixExpression{
+        Token:    p.curToken,
+        Operator: p.curToken.Literal,
+        Left:     left,
+    }
+
+    precedence := p.curPrecedence()
+    p.nextToken()
+    expression.Right = p.parseExpression(precedence)
+
+    return expression
+}
+```
+
+## 5. Pratt解析器核心
+
+```go
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+    prefix := p.prefixParseFns[p.curToken.Type]
+    if prefix == nil {
+        p.noPrefixParseFnError(p.curToken.Type)
+        return nil
+    }
+    leftExp := prefix()
+
+    for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+        infix := p.infixParseFns[p.peekToken.Type]
+        if infix == nil {
+            return leftExp
+        }
+
+        p.nextToken()
+
+        leftExp = infix(leftExp)
+    }
+
+    return leftExp
+}
+```
+
+## 6. 注册解析函数
+
+```go
+func New(l *lexer.Lexer) *Parser {
+    p := &Parser{
+        l:      l,
+        errors: []string{},
+    }
+
+    // 注册前缀解析函数
+    p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+    p.registerPrefix(token.IDENT, p.parseIdentifier)
+    p.registerPrefix(token.INT, p.parseIntegerLiteral)
+    p.registerPrefix(token.BANG, p.parsePrefixExpression)
+    p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+
+    // 注册中缀解析函数
+    p.infixParseFns = make(map[token.TokenType]infixParseFn)
+    p.registerInfix(token.PLUS, p.parseInfixExpression)
+    p.registerInfix(token.MINUS, p.parseInfixExpression)
+    p.registerInfix(token.SLASH, p.parseInfixExpression)
+    p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+    p.registerInfix(token.EQ, p.parseInfixExpression)
+    p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
+    p.registerInfix(token.LT, p.parseInfixExpression)
+    p.registerInfix(token.GT, p.parseInfixExpression)
+
+    // 读取两个token初始化curToken和peekToken
+    p.nextToken()
+    p.nextToken()
+
+    return p
+}
+```
+
+## 7. 测试解析器
+
+```go
+input := `
+let x = 5;
+let y = 10;
+let foobar = 838383;
+`
+
+l := lexer.New(input)
+p := New(l)
+program := p.ParseProgram()
+
+if program == nil {
+    t.Fatalf("ParseProgram() returned nil")
+}
+if len(program.Statements) != 3 {
+    t.Fatalf("program.Statements does not contain 3 statements. got=%d",
+        len(program.Statements))
+}
+
+tests := []struct {
+    expectedIdentifier string
+}{
+    {"x"},
+    {"y"},
+    {"foobar"},
+}
+
+for i, tt := range tests {
+    stmt := program.Statements[i]
+    if !testLetStatement(t, stmt, tt.expectedIdentifier) {
+        return
+    }
+}
+```
+
+## 8. 本章关键点总结
+
+1. **解析器架构**：采用递归下降的Pratt解析方法
+2. **AST设计**：明确定义语句和表达式接口
+3. **节点类型**：实现了Let、Return、表达式语句等基本节点
+4. **表达式解析**：处理前缀和中缀表达式，考虑优先级
+5. **错误处理**：完善的错误收集和报告机制
+6. **测试验证**：确保解析器正确构建AST
+
+第2章完成了从token流到AST的转换过程，为后续的求值器（Evaluator）实现奠定了基础。下一章通常会介绍如何遍历AST并执行程序。
