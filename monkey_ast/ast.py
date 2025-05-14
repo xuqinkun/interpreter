@@ -367,3 +367,46 @@ class CallExpression(Expression):
     @classmethod
     def copy(cls, exp: Expression):
         return cls(exp.token, exp.function, exp.arguments)
+
+
+@dataclass
+class ArrayLiteral(Expression):
+    token: Token=None
+    elements: list[Expression]=None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+        elems = []
+        for elem in self.elements:
+            elems.append(elem.string())
+        return f"[{', '.join(elems)}]"
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.elements)
+
+
+@dataclass
+class IndexExpression(Expression):
+    token: Token=None
+    left: Expression=None
+    index: Expression=None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        return self.token.literal
+
+    def string(self):
+
+        return f"({self.left.string()}[{self.index.string()}])"
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.left, exp.index)

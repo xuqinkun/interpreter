@@ -3,15 +3,62 @@ from typing import List
 from object.object import *
 
 def length(*args):
+    arg = args[0]
     if len(args) != 1:
         return Error(f"wrong number of arguments. got {len(args)}, want 1")
-    if isinstance(args[0], String):
-        return Integer(len(args[0].value))
-    return Error(f"argument to 'len' not supported, got {args[0].type()}")
+    elif isinstance(arg, String):
+        return Integer(len(arg.value))
+    elif isinstance(arg, Array):
+        return Integer(len(arg.elements))
+    return Error(f"argument to 'len' not supported, got {arg.type()}")
 
+def first(*args):
+    arg = args[0]
+    if len(args) != 1:
+        return Error(f"wrong number of arguments. got {len(args)}, want 1")
+    if arg.type() != ARRAY_OBJ:
+        return Error(f"argument to 'first' must be ARRAY, go {arg.type()}")
+    if len(arg.elements) > 0:
+        return arg.elements[0]
+    return NULL
+
+def last(*args):
+    arg = args[0]
+    if len(args) != 1:
+        return Error(f"wrong number of arguments. got {len(args)}, want 1")
+    if arg.type() != ARRAY_OBJ:
+        return Error(f"argument to 'last' must be ARRAY, go {arg.type()}")
+    if len(arg.elements) > 0:
+        return arg.elements[-1]
+    return NULL
+
+def rest(*args):
+    arg = args[0]
+    if len(args) != 1:
+        return Error(f"wrong number of arguments. got {len(args)}, want 1")
+    if arg.type() != ARRAY_OBJ:
+        return Error(f"argument to 'last' must be ARRAY, go {arg.type()}")
+    if len(arg.elements) > 0:
+        return Array(arg.elements[1:])
+    return NULL
+
+def push(*args):
+    arg = args[0]
+    obj = args[1]
+    if len(args) != 2:
+        return Error(f"wrong number of arguments. got {len(args)}, want 2")
+    if arg.type() != ARRAY_OBJ:
+        return Error(f"argument to 'last' must be ARRAY, go {arg.type()}")
+    new_arr = arg.elements[:]
+    new_arr.append(obj)
+    return Array(new_arr)
 
 builtin_obj = {
-    "len": Builtin(fn=length)
+    "len": Builtin(fn=length),
+    "first": Builtin(fn=first),
+    "last": Builtin(fn=last),
+    "rest": Builtin(fn=rest),
+    "push": Builtin(fn=push),
 }
 
 def evaluate_statements(statements: list[ast.Statement], env: Environment):
@@ -175,8 +222,31 @@ def evaluate(node: ast.Node, env: Environment):
         return apply_function(func, arguments)
     elif isinstance(node, ast.StringLiteral):
         return String(node.value)
+    elif isinstance(node, ast.ArrayLiteral):
+        elements = eval_expressions(node.elements, env)
+        if len(elements) == 1 and is_error(elements[0]):
+            return elements[0]
+        return Array(elements=elements)
+    elif isinstance(node, ast.IndexExpression):
+        left = evaluate(node.left, env)
+        if is_error(left):
+            return left
+        index = evaluate(node.index, env)
+        if is_error(index):
+            return index
+        return eval_index_expression(left, index)
     return NULL
 
+
+def eval_index_expression(arr: Array, index: Object):
+    if arr.type() == ARRAY_OBJ and index.type() == INTEGER_OBJ:
+        idx = index.value
+        max_len = len(arr.elements)
+        if idx < 0 or idx >= max_len:
+            return NULL
+        return arr.elements[idx]
+    else:
+        return Error(f"index operator not supported: {arr.type()}")
 
 def eval_expressions(args: List[ast.Expression], env: Environment) -> []:
     result = []

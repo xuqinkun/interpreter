@@ -314,6 +314,78 @@ def test_builtin_functions():
     return True
 
 
+def test_array_literal():
+    code = "[1, 2*2, 3+3]"
+    ret = get_eval(code)
+    if not isinstance(ret, Array):
+        print(f"object is not Array, got {type(ret)} {ret}")
+        return False
+    if len(ret.elements) != 3:
+        print(f"array has wrong num of elements, got {len(ret.elements)}")
+        return False
+    if not test_integer_object(1, ret.elements[0]):
+        return False
+    if not test_integer_object(4, ret.elements[1]):
+        return False
+    if not test_integer_object(6, ret.elements[2]):
+        return False
+    return True
+
+def test_array_index_expression():
+    cases = [
+        (
+            "[1, 2, 3][0]",
+            1,
+        ),
+        (
+            "[1, 2, 3][1]",
+            2,
+        ),
+        (
+            "[1, 2, 3][2]",
+            3,
+        ),
+        (
+            "let i = 0; [1][i];",
+            1,
+        ),
+        (
+            "[1, 2, 3][1 + 1];",
+            3,
+        ),
+        (
+            "let myArray = [1, 2, 3]; myArray[2];",
+            3,
+        ),
+        (
+            "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+            6,
+        ),
+        (
+            "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+            2,
+        ),
+        (
+            "[1, 2, 3][3]",
+            NULL,
+        ),
+        (
+            "[1, 2, 3][-1]",
+            NULL,
+        ),
+    ]
+    for (code, expected) in cases:
+        ret = get_eval(code)
+        if type(expected) == int:
+            passed = test_integer_object(expected, ret)
+        else:
+            passed = test_null_object(ret)
+        if not passed:
+            return False
+    return True
+
+
+
 if __name__ == '__main__':
     tests = [
         test_eval_integer_expression,
@@ -328,5 +400,8 @@ if __name__ == '__main__':
         test_string_literal,
         test_string_concat,
         test_builtin_functions,
+        test_array_literal,
+        test_array_index_expression,
+
     ]
     run_cases(tests)

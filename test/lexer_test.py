@@ -9,9 +9,11 @@ timer = Timer()
 def check(tokens: [], lexer: Lexer):
     for i, expected_token in enumerate(tokens):
         actual_token = lexer.next_token()
-        if actual_token.token_type != expected_token.token_type:
+        actual_type = actual_token.token_type
+        expected_type = expected_token.token_type
+        if actual_type != expected_type:
             raise Exception(
-                f'Wrong token_type expected:[{i}]={expected_token.token_type} got:[{actual_token.token_type}]')
+                f'Wrong token_type expected:[{i}]={expected_type} got:[{actual_type}]={actual_token.literal}')
         if actual_token.literal != expected_token.literal:
             raise Exception(f'Wrong val expected:[{i}]={expected_token.literal} got:[{actual_token.literal}]')
 
@@ -116,6 +118,7 @@ if (5 < 10) {
 10 != 9;
 "foobar"
 "foo bar"
+[1, 2];
     """
     tokens = [Token(LET, "let"),
               Token(IDENT, "five"),
@@ -192,6 +195,12 @@ if (5 < 10) {
               Token(SEMICOLON, ";"),
               Token(STRING, "foobar"),
               Token(STRING, "foo bar"),
+              Token(LBRACKET, "["),
+              Token(INT, "1"),
+              Token(COMMA, ","),
+              Token(INT, "2"),
+              Token(RBRACKET, "]"),
+              Token(SEMICOLON, ";"),
               Token(EOF, NULL)]
     check(tokens, lexer=get_lexer(code))
     print(f'Run {func_name} ok!\tTake: {timer.elapse()}')

@@ -79,6 +79,10 @@ class Lexer:
             tok = Token(LBRACE, ch)
         elif ch == '}':
             tok = Token(RBRACE, ch)
+        elif ch == '[':
+            tok = Token(LBRACKET, ch)
+        elif ch == ']':
+            tok = Token(RBRACKET, ch)
         elif ch == '"' or ch == "'":
             tok = Token(STRING, self.read_string())
         elif ch == NULL:

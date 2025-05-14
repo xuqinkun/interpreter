@@ -1,3 +1,4 @@
+from smtpd import program
 from typing import Callable
 from lexer import lexer
 from monkey_ast.ast import *
@@ -279,6 +280,14 @@ def test_operator_precedence_parsing():
             "add(a + b + c * d / f + g)",
             "add((((a + b) + ((c * d) / f)) + g))",
         ),
+        (
+            "a * [1, 2, 3, 4][b * c] * d",
+            "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+        ),
+        (
+            "add(a * b[2], b[1], 2 * [1, 2][1])",
+            "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        ),
     ]
     for code in codes:
         program = parse(code[0])
@@ -442,6 +451,32 @@ def test_string_literal_expression():
     return True
 
 
+def test_parsing_array_literals():
+    code = "[1, 2 * 2, 3+3]"
+    program = parse(code)
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    array = check_type(ArrayLiteral, stmt.expression)
+    check_len(3, array.elements)
+    if not test_integer_literal(array.elements[0], 1):
+        return False
+    if not test_infix_expression(array.elements[1], 2, '*', 2):
+        return False
+    if not test_infix_expression(array.elements[2], 3, '+', 3):
+        return False
+    return True
+
+
+def test_parsing_index_expression():
+    program = parse("myArray[1 + 1]")
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    index_exp = check_type(IndexExpression, stmt.expression)
+    if not test_identifier(index_exp.left, "myArray"):
+        return False
+    if not test_infix_expression(index_exp.index, 1, '+', 1):
+        return False
+    return True
+
+
 def run_cases(cases: list[Callable]):
     for func in cases:
         if func():
@@ -464,7 +499,9 @@ if __name__ == '__main__':
         test_function_literal_parsing,
         test_function_parameter_parsing,
         test_call_expression_parsing,
-        test_string_literal_expression
+        test_string_literal_expression,
+        test_parsing_array_literals,
+        test_parsing_index_expression,
     ]
     run_cases(cases)
     parse("add(1+2)*3")

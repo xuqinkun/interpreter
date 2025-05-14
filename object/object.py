@@ -13,6 +13,7 @@ ERROR_OBJ = "ERROR"
 FUNCTON_OBJ = "FUNCTION"
 STRING_OBJ = "STRING"
 BUILTIN_OBJ = "BUILTIN"
+ARRAY_OBJ = "ARRAY"
 
 
 class Object:
@@ -36,6 +37,9 @@ class Integer(Object):
 
     def inspect(self) -> str:
         return str(self.value)
+
+    def __repr__(self):
+        return self.inspect()
 
     @classmethod
     def copy(cls, obj: Object):
@@ -165,3 +169,21 @@ class Builtin(Object):
 
     def inspect(self) -> str:
         return "builtin function"
+
+@dataclass
+class Array(Object):
+    elements: list[Object]=None
+
+    def type(self) -> str:
+        return ARRAY_OBJ
+
+    def inspect(self) -> str:
+        elems = []
+        for e in self.elements:
+            elems.append(e.inspect())
+        return f"[{', '.join(elems)}]"
+
+    def __repr__(self):
+        return self.inspect()
+
+

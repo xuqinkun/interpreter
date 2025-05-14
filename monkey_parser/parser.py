@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Dict, Callable
+
 from lexer import lexer
 from lexer.lexer import Lexer
 from monkey_ast.ast import *
@@ -18,6 +18,7 @@ class Precedence(Enum):
     PRODUCT = 7  # *
     PREFIX = 8  # -X or !X
     CALL = 9  # func(X)
+    INDEX = 10
 
 
 precedences = {
@@ -33,7 +34,8 @@ precedences = {
     MINUS: Precedence.SUM,
     SLASH: Precedence.PRODUCT,
     ASTERISK: Precedence.PRODUCT,
-    LPAREN: Precedence.CALL
+    LPAREN: Precedence.CALL,
+    LBRACKET: Precedence.INDEX,
 }
 
 
@@ -256,7 +258,7 @@ class Parser:
 
     def parse_call_expression(self, function: Expression):
         exp = CallExpression(self.curr, function)
-        exp.arguments = self.parse_call_arguments()
+        exp.arguments = self.parse_expression_list(RPAREN)
         return exp
 
     def parse_call_arguments(self):
@@ -274,6 +276,34 @@ class Parser:
             return None
         return args
 
+    def parse_array_literal(self):
+        arr = ArrayLiteral(self.curr)
+        arr.elements = self.parse_expression_list(RBRACKET)
+        return arr
+
+    def parse_expression_list(self, end: str):
+        expressions = []
+        if self.peek_token_is(end):
+            self.next_token()
+            return expressions
+        self.next_token()
+        expressions.append(self.parse_expression(Precedence.LOWEST))
+        while self.peek_token_is(COMMA):
+            self.next_token()
+            self.next_token()
+            expressions.append(self.parse_expression(Precedence.LOWEST))
+        if not self.expect_peek(end):
+            return None
+        return expressions
+
+    def parse_index_expression(self, left: Expression):
+        exp = IndexExpression(self.curr, left=left)
+        self.next_token()
+        exp.index = self.parse_expression(Precedence.LOWEST)
+        if not self.expect_peek(RBRACKET):
+            return True
+        return exp
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser(lex)
@@ -284,6 +314,8 @@ class Parser:
         p.register_prefix(IDENT, p.parse_identifier)
         # ()
         p.register_prefix(LPAREN, p.parse_grouped_expression)
+        # Array
+        p.register_prefix(LBRACKET, p.parse_array_literal)
         # Integer
         p.register_prefix(INT, p.parse_integer_literal)
         # Boolean
@@ -308,6 +340,8 @@ class Parser:
         p.register_infix(NOT_EQ, p.parse_infix_expression)
         p.register_infix(LT, p.parse_infix_expression)
         p.register_infix(GT, p.parse_infix_expression)
+        # []
+        p.register_infix(LBRACKET, p.parse_index_expression)
         # if
         p.register_prefix(IF, p.parse_if_expression)
         # function
