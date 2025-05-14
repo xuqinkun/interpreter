@@ -59,12 +59,19 @@ def push(*args):
     return Array(new_arr)
 
 
+def push(*args):
+    for arg in args:
+        print(arg.inspect())
+    return NULL
+
+
 builtin_obj = {
     "len": Builtin(fn=length),
     "first": Builtin(fn=first),
     "last": Builtin(fn=last),
     "rest": Builtin(fn=rest),
     "push": Builtin(fn=push),
+    "puts": Builtin(fn=push),
 }
 
 
