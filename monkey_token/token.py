@@ -72,6 +72,8 @@ BITWISE_OR = '|'
 # 关键字
 FUNCTION = "FUNCTION"
 LET = "LET"
+# 宏
+MACRO = "MACRO"
 
 # EOF的值
 NULL = '\0'
@@ -84,6 +86,7 @@ keywords = {
     'true': TRUE,
     'false': FALSE,
     'else': ELSE,
+    'macro': MACRO,
 }
 
 

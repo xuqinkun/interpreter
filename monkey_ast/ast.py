@@ -52,7 +52,7 @@ class Expression(Node):
 
 
 @dataclass
-class Program:
+class Program(Node):
     statements: list[Statement]
 
     def get_val(self):
@@ -60,6 +60,9 @@ class Program:
             return self.statements[0].literal()
         else:
             return ""
+
+    def literal(self) -> str:
+        return "program"
 
     def string(self):
         s = []
@@ -359,10 +362,14 @@ class FunctionLiteral(Expression):
 
     def string(self):
         params = []
-        for p in self.parameters:
-            params.append(p.string())
+        if self.parameters:
+            for p in self.parameters:
+                params.append(p.string())
         param = ','.join(params)
         return f"{self.token.literal}({param}) {{{self.body.string()}}}"
+
+    def __repr__(self):
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
@@ -470,3 +477,36 @@ class IndexExpression(Expression):
     @classmethod
     def copy(cls, exp: Expression):
         return cls(exp.token, exp.left, exp.index)
+
+
+@dataclass
+class MacroLiteral(Expression):
+    token: Token = None
+    parameters: list[Expression] = None
+    body: BlockStatement = None
+
+    def expression(self):
+        pass
+
+    def literal(self) -> str:
+        if self.token:
+            return self.token.literal
+        else:
+            return ""
+
+    def string(self):
+        params = []
+        if self.parameters:
+            for param in self.parameters:
+                params.append(param.string())
+        body = ""
+        if self.body:
+            body = self.body.string()
+        return f"{self.literal()}({', '.join(params)}) {{{body}}}"
+
+    def __repr__(self):
+        return self.string()
+
+    @classmethod
+    def copy(cls, exp: Expression):
+        return cls(exp.token, exp.parameters, exp.body)

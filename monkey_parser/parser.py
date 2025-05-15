@@ -321,6 +321,16 @@ class Parser:
             return None
         return hs
 
+    def parse_macro_literal(self):
+        lit = MacroLiteral(self.curr)
+        if not self.expect_peek(LPAREN):
+            return None
+        lit.parameters = self.parse_function_parameters()
+        if not self.expect_peek(LBRACE):
+            return None
+        lit.body = self.parse_block_statement()
+        return lit
+
     @staticmethod
     def get_parser(lex: Lexer):
         p = Parser()
@@ -368,6 +378,8 @@ class Parser:
         p.register_infix(LPAREN, p.parse_call_expression)
         # 哈希
         p.register_prefix(LBRACE, p.parse_hash_literal)
+        # 宏
+        p.register_prefix(MACRO, p.parse_macro_literal)
         # 将curr指向第一个token
         p.next_token()
         p.next_token()

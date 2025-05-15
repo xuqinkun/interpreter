@@ -15,7 +15,8 @@ STRING_OBJ = "STRING"
 BUILTIN_OBJ = "BUILTIN"
 ARRAY_OBJ = "ARRAY"
 HASH_OBJ = "HASH"
-QUOTE_BO = "QUOTE"
+QUOTE_OBJ = "QUOTE"
+MACRO_OBJ = "MACRO"
 
 
 @dataclass
@@ -253,7 +254,31 @@ class Quote(Object):
     node: ast.Node = None
 
     def type(self) -> str:
-        return QUOTE_BO
+        return QUOTE_OBJ
 
     def inspect(self) -> str:
         return f"QUOTE({self.node.string()})"
+
+
+@dataclass
+class Macro(Object):
+    parameters: list[ast.Identifier] = None
+    body: ast.BlockStatement = None
+    env: Environment = None
+
+    def type(self) -> str:
+        return MACRO_OBJ
+
+    def inspect(self) -> str:
+        params = []
+        if self.parameters:
+            for p in self.parameters:
+                params.append(p.string())
+        body = ""
+        if self.body:
+            body = self.body.string()
+
+        return f"macro ({', '.join(params)}) {{\n {body}\n}}"
+
+    def __repr__(self):
+        return self.inspect()

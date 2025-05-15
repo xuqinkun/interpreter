@@ -486,6 +486,36 @@ def test_parsing_empty_hash_literal():
     return True
 
 
+def test_parsing_macro_literal():
+    code = "macro(x, y) {x+y;}"
+    program = parse(code)
+    output = check_len(1, program.statements)
+    if type(output) == tuple:
+        return output
+    stmt = check_type(ExpressionStatement, program.statements[0])
+    if type(stmt) == tuple:
+        return stmt
+    macro = check_type(MacroLiteral, stmt.expression)
+    if type(macro) == tuple:
+        return macro
+    output = check_len(2, macro.parameters)
+    if type(output) == tuple:
+        return output
+    output = test_literal_expression(macro.parameters[0], 'x')
+    if type(output) == tuple:
+        return output
+    output = test_literal_expression(macro.parameters[1], 'y')
+    if type(output) == tuple:
+        return output
+    output = check_len(1, macro.body.statements)
+    if type(output) == tuple:
+        return output
+    body_stmt = check_type(ExpressionStatement, macro.body.statements[0])
+    if type(body_stmt) == tuple:
+        return body_stmt
+    return test_infix_expression(body_stmt.expression, "x", "+", "y")
+
+
 if __name__ == '__main__':
     cases = [
         test_let_statements,
@@ -505,5 +535,6 @@ if __name__ == '__main__':
         test_parsing_index_expression,
         test_parsing_hash_literal_string_key,
         test_parsing_empty_hash_literal,
+        test_parsing_macro_literal,
     ]
     run_cases(cases)

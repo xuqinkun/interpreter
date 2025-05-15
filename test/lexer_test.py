@@ -120,6 +120,7 @@ if (5 < 10) {
 "foo bar"
 [1, 2];
 {"foo":"bar"}
+macro(x, y) { x + y; };
     """
     tokens = [Token(LET, "let"),
               Token(IDENT, "five"),
@@ -207,6 +208,19 @@ if (5 < 10) {
               Token(COLON, ":"),
               Token(STRING, "bar"),
               Token(RBRACE, "}"),
+              Token(MACRO, "macro"),
+              Token(LPAREN, "("),
+              Token(IDENT, "x"),
+              Token(COMMA, ","),
+              Token(IDENT, "y"),
+              Token(RPAREN, ")"),
+              Token(LBRACE, "{"),
+              Token(IDENT, "x"),
+              Token(PLUS, "+"),
+              Token(IDENT, "y"),
+              Token(SEMICOLON, ";"),
+              Token(RBRACE, "}"),
+              Token(SEMICOLON, ";"),
               Token(EOF, NULL)]
     check(tokens, lexer=get_lexer(code))
     print(f'Run {func_name} ok!\tTake: {timer.elapse()}')
