@@ -654,3 +654,253 @@ for i, tt := range tests {
 
 第2章完成了从token流到AST的转换过程，为后续的求值器（Evaluator）实现奠定了基础。下一章通常会介绍如何遍历AST并执行程序。
 
+
+# 第3章 求值
+
+## 1. 求值器概述
+第3章实现了AST的解释执行，是解释器的核心执行引擎。
+
+### 1.1 核心职责
+- 遍历AST并执行节点
+- 维护执行环境(作用域)
+- 处理各种表达式的求值
+- 实现内置函数和操作符
+
+## 2. 核心数据结构
+
+### 2.1 值系统设计
+```go
+type ObjectType string
+
+const (
+    INTEGER_OBJ  = "INTEGER"
+    BOOLEAN_OBJ  = "BOOLEAN"
+    NULL_OBJ     = "NULL"
+    RETURN_OBJ   = "RETURN"
+    ERROR_OBJ    = "ERROR"
+    FUNCTION_OBJ = "FUNCTION"
+)
+
+type Object interface {
+    Type() ObjectType
+    Inspect() string
+}
+```
+
+### 2.2 环境(作用域)实现
+```go
+type Environment struct {
+    store map[string]Object
+    outer *Environment // 用于闭包实现
+}
+
+func NewEnvironment() *Environment {
+    return &Environment{
+        store: make(map[string]Object),
+    }
+}
+
+func (e *Environment) Get(name string) (Object, bool) {
+    obj, ok := e.store[name]
+    if !ok && e.outer != nil {
+        obj, ok = e.outer.Get(name)
+    }
+    return obj, ok
+}
+```
+
+## 3. 核心求值逻辑
+
+### 3.1 求值入口
+```go
+func Eval(node ast.Node, env *Environment) Object {
+    switch node := node.(type) {
+    case *ast.Program:
+        return evalProgram(node, env)
+    case *ast.ExpressionStatement:
+        return Eval(node.Expression, env)
+    case *ast.IntegerLiteral:
+        return &Integer{Value: node.Value}
+    case *ast.Boolean:
+        return nativeBoolToBooleanObject(node.Value)
+    case *ast.PrefixExpression:
+        right := Eval(node.Right, env)
+        if isError(right) {
+            return right
+        }
+        return evalPrefixExpression(node.Operator, right)
+    // ...其他节点类型的处理
+    }
+    return nil
+}
+```
+
+### 3.2 表达式求值
+```go
+func evalInfixExpression(
+    operator string,
+    left, right Object,
+) Object {
+    switch {
+    case left.Type() == INTEGER_OBJ && right.Type() == INTEGER_OBJ:
+        return evalIntegerInfixExpression(operator, left, right)
+    case operator == "==":
+        return nativeBoolToBooleanObject(left == right)
+    case operator == "!=":
+        return nativeBoolToBooleanObject(left != right)
+    default:
+        return newError("unknown operator: %s %s %s",
+            left.Type(), operator, right.Type())
+    }
+}
+```
+
+## 4. 控制结构实现
+
+### 4.1 条件表达式
+```go
+func evalIfExpression(ie *ast.IfExpression, env *Environment) Object {
+    condition := Eval(ie.Condition, env)
+    if isError(condition) {
+        return condition
+    }
+    
+    if isTruthy(condition) {
+        return Eval(ie.Consequence, env)
+    } else if ie.Alternative != nil {
+        return Eval(ie.Alternative, env)
+    } else {
+        return NULL
+    }
+}
+
+func isTruthy(obj Object) bool {
+    switch obj {
+    case NULL:
+        return false
+    case TRUE:
+        return true
+    case FALSE:
+        return false
+    default:
+        return true
+    }
+}
+```
+
+### 4.2 函数调用
+```go
+func evalFunctionCall(fn Object, args []Object) Object {
+    function, ok := fn.(*Function)
+    if !ok {
+        return newError("not a function: %s", fn.Type())
+    }
+    
+    extendedEnv := extendFunctionEnv(function, args)
+    evaluated := Eval(function.Body, extendedEnv)
+    return unwrapReturnValue(evaluated)
+}
+
+func extendFunctionEnv(fn *Function, args []Object) *Environment {
+    env := NewEnclosedEnvironment(fn.Env)
+    
+    for paramIdx, param := range fn.Parameters {
+        env.Set(param.Value, args[paramIdx])
+    }
+    
+    return env
+}
+```
+
+## 5. 错误处理机制
+
+### 5.1 错误对象
+```go
+type Error struct {
+    Message string
+}
+
+func (e *Error) Type() ObjectType { return ERROR_OBJ }
+func (e *Error) Inspect() string  { return "ERROR: " + e.Message }
+
+func newError(format string, a ...interface{}) *Error {
+    return &Error{Message: fmt.Sprintf(format, a...)}
+}
+```
+
+### 5.2 错误传播
+```go
+func evalProgram(program *ast.Program, env *Environment) Object {
+    var result Object
+    
+    for _, statement := range program.Statements {
+        result = Eval(statement, env)
+        
+        switch result := result.(type) {
+        case *ReturnValue:
+            return result.Value
+        case *Error:
+            return result
+        }
+    }
+    
+    return result
+}
+```
+
+## 6. 测试验证
+
+### 6.1 测试用例
+```go
+func TestEvalIntegerExpression(t *testing.T) {
+    tests := []struct {
+        input    string
+        expected int64
+    }{
+        {"5", 5},
+        {"10", 10},
+        {"-5", -5},
+        {"-10", -10},
+        {"5 + 5 + 5 + 5 - 10", 10},
+        {"2 * 2 * 2 * 2 * 2", 32},
+    }
+    
+    for _, tt := range tests {
+        evaluated := testEval(tt.input)
+        testIntegerObject(t, evaluated, tt.expected)
+    }
+}
+
+func testEval(input string) Object {
+    l := lexer.New(input)
+    p := parser.New(l)
+    program := p.ParseProgram()
+    env := object.NewEnvironment()
+    return Eval(program, env)
+}
+```
+
+## 7. 设计要点
+
+1. **递归求值**：自然地反映AST结构
+2. **统一对象模型**：所有值实现Object接口
+3. **环境链**：支持嵌套作用域
+4. **错误传播**：遇到错误立即终止当前求值
+
+## 8. 性能优化
+
+1. **对象复用**：对TRUE/FALSE/NULL使用单例
+2. **环境哈希优化**：使用原生map存储变量
+3. **短路求值**：逻辑表达式不需要完全求值
+
+## 9. 扩展功能
+
+1. **更多数据类型**：字符串、数组、哈希
+2. **标准库**：添加内置函数
+3. **闭包支持**：完善环境链实现
+4. **性能分析**：添加执行时间统计
+
+本章实现的求值器完成了从AST到执行结果的完整转换，通过递归下降的方式优雅地处理了各种语法结构的求值逻辑，为解释器提供了完整的执行能力。
+
+
+
