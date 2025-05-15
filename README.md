@@ -903,4 +903,250 @@ func testEval(input string) Object {
 本章实现的求值器完成了从AST到执行结果的完整转换，通过递归下降的方式优雅地处理了各种语法结构的求值逻辑，为解释器提供了完整的执行能力。
 
 
+# 第4章 扩展解释器
+
+## 1. 扩展功能概述
+第4章在基础解释器上添加了多项增强功能，使语言更具实用性。
+
+### 1.1 主要扩展内容
+- 字符串支持
+- 数组数据结构
+- 哈希表实现
+- 内置函数库
+
+## 2. 字符串支持实现
+
+### 2.1 字符串对象
+```go
+type String struct {
+    Value string
+}
+
+func (s *String) Type() ObjectType { return STRING_OBJ }
+func (s *String) Inspect() string  { return s.Value }
+```
+
+### 2.2 字符串拼接
+```go
+func evalInfixExpression(operator string, left, right Object) Object {
+    // ...其他case处理
+    case left.Type() == STRING_OBJ && right.Type() == STRING_OBJ:
+        if operator != "+" {
+            return newError("unsupported operator for strings: %s", operator)
+        }
+        leftVal := left.(*String).Value
+        rightVal := right.(*String).Value
+        return &String{Value: leftVal + rightVal}
+    // ...
+}
+```
+
+## 3. 数组实现
+
+### 3.1 数组对象
+```go
+type Array struct {
+    Elements []Object
+}
+
+func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
+func (ao *Array) Inspect() string {
+    var out bytes.Buffer
+    
+    elements := []string{}
+    for _, e := range ao.Elements {
+        elements = append(elements, e.Inspect())
+    }
+    
+    out.WriteString("[")
+    out.WriteString(strings.Join(elements, ", "))
+    out.WriteString("]")
+    
+    return out.String()
+}
+```
+
+### 3.2 索引表达式求值
+```go
+func evalIndexExpression(left, index Object) Object {
+    switch {
+    case left.Type() == ARRAY_OBJ && index.Type() == INTEGER_OBJ:
+        return evalArrayIndexExpression(left, index)
+    case left.Type() == HASH_OBJ:
+        return evalHashIndexExpression(left, index)
+    default:
+        return newError("index operator not supported: %s", left.Type())
+    }
+}
+
+func evalArrayIndexExpression(array, index Object) Object {
+    arrayObject := array.(*Array)
+    idx := index.(*Integer).Value
+    max := int64(len(arrayObject.Elements) - 1
+    
+    if idx < 0 || idx > max {
+        return NULL
+    }
+    
+    return arrayObject.Elements[idx]
+}
+```
+
+## 4. 哈希表实现
+
+### 4.1 哈希键接口
+```go
+type HashKey struct {
+    Type  ObjectType
+    Value uint64
+}
+
+type Hashable interface {
+    HashKey() HashKey
+}
+```
+
+### 4.2 哈希对象
+```go
+type HashPair struct {
+    Key   Object
+    Value Object
+}
+
+type Hash struct {
+    Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+    var out bytes.Buffer
+    
+    pairs := []string{}
+    for _, pair := range h.Pairs {
+        pairs = append(pairs, fmt.Sprintf("%s: %s",
+            pair.Key.Inspect(), pair.Value.Inspect()))
+    }
+    
+    out.WriteString("{")
+    out.WriteString(strings.Join(pairs, ", "))
+    out.WriteString("}")
+    
+    return out.String()
+}
+```
+
+## 5. 内置函数库
+
+### 5.1 内置函数对象
+```go
+type BuiltinFunction func(args ...Object) Object
+
+type Builtin struct {
+    Fn BuiltinFunction
+}
+
+func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
+func (b *Builtin) Inspect() string  { return "builtin function" }
+```
+
+### 5.2 常用内置函数实现
+```go
+var builtins = map[string]*Builtin{
+    "len": {
+        Fn: func(args ...Object) Object {
+            if len(args) != 1 {
+                return newError("wrong number of arguments. got=%d, want=1",
+                    len(args))
+            }
+            
+            switch arg := args[0].(type) {
+            case *Array:
+                return &Integer{Value: int64(len(arg.Elements))}
+            case *String:
+                return &Integer{Value: int64(len(arg.Value))}
+            default:
+                return newError("argument to `len` not supported, got %s",
+                    args[0].Type())
+            }
+        },
+    },
+    "first": {
+        Fn: func(args ...Object) Object {
+            // 实现获取数组第一个元素
+        },
+    },
+    // ...其他内置函数
+}
+```
+
+## 6. 注释支持
+
+### 6.1 注释Token扩展
+```go
+// 在lexer中添加
+func (l *Lexer) skipComment() {
+    for l.ch != '\n' && l.ch != 0 {
+        l.readChar()
+    }
+    l.skipWhitespace()
+}
+```
+
+### 6.2 注释AST节点
+```go
+type Comment struct {
+    Token token.Token
+    Text  string
+}
+
+func (c *Comment) statementNode()       {}
+func (c *Comment) TokenLiteral() string { return c.Token.Literal }
+func (c *Comment) String() string       { return "#" + c.Text }
+```
+
+## 7. 测试验证
+
+### 7.1 数组测试用例
+```go
+func TestArrayLiterals(t *testing.T) {
+    input := "[1, 2 * 2, 3 + 3]"
+    
+    evaluated := testEval(input)
+    result, ok := evaluated.(*Array)
+    if !ok {
+        t.Fatalf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+    }
+    
+    if len(result.Elements) != 3 {
+        t.Fatalf("array has wrong num of elements. got=%d",
+            len(result.Elements))
+    }
+    
+    testIntegerObject(t, result.Elements[0], 1)
+    testIntegerObject(t, result.Elements[1], 4)
+    testIntegerObject(t, result.Elements[2], 6)
+}
+```
+
+## 8. 设计要点
+
+1. **统一对象模型**：所有数据类型实现Object接口
+2. **安全的类型转换**：执行时严格检查类型
+3. **可扩展的哈希键**：支持任意可哈希类型作为键
+4. **灵活的内置函数**：支持可变参数
+
+## 9. 性能优化
+
+1. **哈希预计算**：提前计算对象哈希值
+2. **数组预分配**：根据元素数量预分配内存
+3. **字符串优化**：使用bytes.Buffer处理拼接
+
+## 10. 扩展方向
+
+1. **文件I/O操作**：添加读写文件支持
+2. **模块系统**：实现代码模块化
+3. **并发原语**：添加goroutine支持
+4. **标准库扩展**：更多实用函数
+
+本章扩展使解释器具备了处理复杂数据结构的能力，通过内置函数提供了基础功能库，使语言更加实用。哈希表和数组的实现为数据处理提供了强大支持，字符串操作使文本处理成为可能。
 
