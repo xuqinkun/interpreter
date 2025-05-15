@@ -3,6 +3,7 @@ import sys
 from evaluate.evaluator import evaluate, NULL
 from monkey_parser.parser import parse
 from object.object import Environment
+from object.macro_expansion import define_macro, expand_macro
 
 PROMPT = ">>"
 
@@ -16,11 +17,14 @@ def match_eof(code: str):
 
 def run():
     env = Environment()
+    macro_env = Environment()
     code = input(PROMPT)
     while not match_eof(code):
         if code:
             program = parse(code)
-            ret = evaluate(program, env)
+            define_macro(program, macro_env)
+            expanded = expand_macro(program, macro_env)
+            ret = evaluate(expanded, env)
             if ret != NULL:
                 print(ret.inspect())
         code = input(PROMPT)
