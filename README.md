@@ -1150,3 +1150,233 @@ func TestArrayLiterals(t *testing.T) {
 
 本章扩展使解释器具备了处理复杂数据结构的能力，通过内置函数提供了基础功能库，使语言更加实用。哈希表和数组的实现为数据处理提供了强大支持，字符串操作使文本处理成为可能。
 
+# 第5章 宏
+
+## 1. 宏系统概述
+宏系统是解释器的元编程能力扩展，允许在编译时生成和转换代码。
+
+### 1.1 核心特性
+- 编译时代码转换
+- 语法扩展能力
+- 元编程支持
+- 代码生成工具
+
+## 2. 宏系统架构设计
+
+### 2.1 核心组件
+```go
+type MacroSystem struct {
+    env      *object.Environment  // 宏定义环境
+    expanded map[ast.Node]bool    // 已展开节点标记
+    queue    []ast.Node           // 待处理节点队列
+}
+```
+
+### 2.2 宏处理流程
+1. **收集阶段**：识别宏定义
+2. **展开阶段**：应用宏转换
+3. **验证阶段**：检查展开结果
+
+## 3. 宏定义实现
+
+### 3.1 宏对象表示
+```go
+type Macro struct {
+    Parameters []*ast.Identifier
+    Body       *ast.BlockStatement
+    Env        *object.Environment
+}
+
+func (m *Macro) Type() object.ObjectType { return object.MACRO_OBJ }
+func (m *Macro) Inspect() string {
+    var out bytes.Buffer
+    
+    params := []string{}
+    for _, p := range m.Parameters {
+        params = append(params, p.String())
+    }
+    
+    out.WriteString("macro(")
+    out.WriteString(strings.Join(params, ", "))
+    out.WriteString(") {\n")
+    out.WriteString(m.Body.String())
+    out.WriteString("\n}")
+    
+    return out.String()
+}
+```
+
+## 4. 宏扩展机制
+
+### 4.1 宏定义识别
+```go
+func (e *Evaluator) evalMacroDefinition(node *ast.LetStatement) object.Object {
+    macro := &object.Macro{
+        Parameters: node.Value.(*ast.MacroLiteral).Parameters,
+        Body:       node.Value.(*ast.MacroLiteral).Body,
+        Env:        e.Env,
+    }
+    
+    e.Env.Set(node.Name.Value, macro)
+    return macro
+}
+```
+
+### 4.2 宏调用处理
+```go
+func (e *Evaluator) expandMacros(program ast.Node) ast.Node {
+    modifier := func(node ast.Node) ast.Node {
+        call, ok := node.(*ast.CallExpression)
+        if !ok {
+            return node
+        }
+        
+        macro, ok := e.isMacroCall(call)
+        if !ok {
+            return node
+        }
+        
+        args := e.quoteArgs(call)
+        evalEnv := e.extendMacroEnv(macro, args)
+        
+        evaluated := e.Eval(macro.Body, evalEnv)
+        quote, ok := evaluated.(*object.Quote)
+        if !ok {
+            panic("macro should return quoted expression")
+        }
+        
+        return quote.Node
+    }
+    
+    return ast.Modify(program, modifier)
+}
+```
+
+## 5. 引用与反引用机制
+
+### 5.1 引用实现
+```go
+type Quote struct {
+    Node ast.Node
+}
+
+func (q *Quote) Type() object.ObjectType { return object.QUOTE_OBJ }
+func (q *Quote) Inspect() string {
+    return "QUOTE(" + q.Node.String() + ")"
+}
+```
+
+### 5.2 反引用实现
+```go
+func (e *Evaluator) evalUnquote(node *ast.UnquoteExpression, env *object.Environment) object.Object {
+    evaluated := e.Eval(node.Expression, env)
+    quote, ok := evaluated.(*object.Quote)
+    if !ok {
+        return evaluated
+    }
+    return quote.Node
+}
+```
+
+## 6. 宏应用示例
+
+### 6.1 定义unless宏
+```monkey
+let unless = macro(condition, consequence, alternative) {
+    quote(
+        if (!(unquote(condition))) {
+            unquote(consequence);
+        } else {
+            unquote(alternative);
+        }
+    );
+};
+```
+
+### 6.2 宏展开过程
+1. 输入代码：
+   ```monkey
+   unless(10 > 5, puts("not greater"), puts("greater"));
+   ```
+2. 展开结果：
+   ```monkey
+   if (!(10 > 5)) {
+       puts("not greater");
+   } else {
+       puts("greater");
+   }
+   ```
+
+## 7. 测试验证
+
+### 7.1 宏展开测试
+```go
+func TestDefineMacros(t *testing.T) {
+    input := `
+    let number = 1;
+    let function = fn(x, y) { x + y };
+    let mymacro = macro(x, y) { x + y; };
+    `
+    
+    env := object.NewEnvironment()
+    program := parseProgram(input)
+    
+    DefineMacros(program, env)
+    
+    if len(program.Statements) != 2 {
+        t.Fatalf("Wrong number of statements. expected=2, got=%d",
+            len(program.Statements))
+    }
+    
+    _, ok := env.Get("number")
+    if ok {
+        t.Fatalf("number should not be defined")
+    }
+    
+    _, ok = env.Get("function")
+    if ok {
+        t.Fatalf("function should not be defined")
+    }
+    
+    obj, ok := env.Get("mymacro")
+    if !ok {
+        t.Fatalf("macro not in environment")
+    }
+    
+    macro, ok := obj.(*object.Macro)
+    if !ok {
+        t.Fatalf("object is not Macro. got=%T (%+v)", obj, obj)
+    }
+    
+    if len(macro.Parameters) != 2 {
+        t.Fatalf("Wrong number of macro parameters. expected=2, got=%d",
+            len(macro.Parameters))
+    }
+    
+    if macro.Parameters[0].String() != "x" {
+        t.Fatalf("parameter is not 'x'. got=%q", macro.Parameters[0])
+    }
+}
+```
+
+## 8. 设计要点
+
+1. **卫生宏实现**：自动处理变量捕获问题
+2. **两阶段处理**：先收集宏定义再展开
+3. **引用完整性**：保持AST结构不变性
+4. **环境隔离**：宏定义与运行时环境分离
+
+## 9. 性能考虑
+
+1. **预处理缓存**：缓存宏展开结果
+2. **惰性求值**：只在需要时展开宏
+3. **增量处理**：仅处理变更的宏定义
+
+## 10. 扩展方向
+
+1. **模式匹配宏**：支持复杂语法转换
+2. **编译时计算**：常量折叠优化
+3. **语法扩展**：自定义语法糖
+4. **调试支持**：宏展开追踪
+
+宏系统的实现为解释器提供了强大的元编程能力，使得语言可以在保持核心简单的同时，通过宏来扩展表面语法。这种设计借鉴了Lisp宏系统的理念，同时结合了现代语言的特点。
