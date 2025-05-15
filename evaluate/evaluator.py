@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List
 from object.object import *
+from evaluate.quote_unquote import quote
 
 
 def length(*args):
@@ -229,6 +230,8 @@ def evaluate(node: ast.Node, env: Environment):
         body = node.body
         return Function(parameters=params, body=body, env=env)
     elif isinstance(node, ast.CallExpression):
+        if node.function.literal() == 'quote':
+            return quote(node.arguments[0], env)
         func = evaluate(node.function, env)
         if is_error(func):
             return func

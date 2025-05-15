@@ -98,12 +98,15 @@ class Identifier(Expression):
 
 @dataclass
 class LetStatement(Statement):
-    token: Token
+    token: Token = None
     name: Identifier = None
     value: Expression = None
 
     def literal(self):
-        return self.token.literal
+        if self.token:
+            return self.token.literal
+        else:
+            return ""
 
     def statement(self):
         pass
@@ -113,7 +116,8 @@ class LetStatement(Statement):
 
     def string(self):
         exp = '' if self.value is None else self.value.string()
-        return f"{self.literal()} {self.name.string()} = {exp};"
+        name = '' if self.name is None else self.name.string()
+        return f"{self.literal()} {name} = {self.value};"
 
     @classmethod
     def copy(cls, stmt: Statement):
@@ -126,7 +130,7 @@ class ReturnStatement(Statement):
     return_value: Expression = None
 
     def literal(self):
-        return self.token.literal
+        return self.token.literal if self.token is not None else ''
 
     def statement(self):
         pass
@@ -327,11 +331,11 @@ class IFExpression(Expression):
     def string(self):
         condition = self.condition.string()
         consequence = self.consequence.string()
-        stem = f"if {condition} {consequence}"
+        stem = f"if ({condition}) {{{consequence}}}"
         if self.alternative is None:
             return stem
         else:
-            return f"{stem} else {self.alternative.string()}"
+            return f"{stem} else {{{self.alternative.string()}}}"
 
     def __repr__(self):
         return self.string()
@@ -358,7 +362,7 @@ class FunctionLiteral(Expression):
         for p in self.parameters:
             params.append(p.string())
         param = ','.join(params)
-        return f"{self.token.literal}({param}) {self.body.string()}"
+        return f"{self.token.literal}({param}) {{{self.body.string()}}}"
 
     @classmethod
     def copy(cls, exp: Expression):
@@ -407,6 +411,9 @@ class ArrayLiteral(Expression):
         for elem in self.elements:
             elems.append(elem.string())
         return f"[{', '.join(elems)}]"
+
+    def __repr__(self):
+        return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
