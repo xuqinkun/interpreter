@@ -1,33 +1,19 @@
 # -*- coding: utf-8 -*-
 from object import object
 from evaluate import evaluator
-from lexer.lexer import get_lexer
 from monkey_parser.parser import *
-from evaluate.evaluator import evaluate
 from object.object import *
-from object.object import Environment
-
-
-def check_type(expected_type: type, obj: object):
-    if isinstance(obj, Error):
-        return obj
-    if not isinstance(obj, expected_type):
-        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
-    return expected_type.copy(obj)
-
-
-def get_eval(code: str):
-    p = Parser.get_parser(get_lexer(code))
-    program = p.parse_program()
-    env = Environment()
-    return evaluate(program, env)
+from util.test_util import *
 
 
 def test_integer_object(expected: int, obj: Object):
-    result = check_type(Integer, obj)
+    output = check_type(Integer, obj)
+    if type(output) == tuple:
+        return output
+    result = output
     if result.value != expected:
-        print(f"object has wrong value, got:{result.value} expected: {expected}")
-        return False
+        cause = f"object has wrong value, got:{result.value} expected: {expected}"
+        return False, cause
     return True
 
 
@@ -51,8 +37,9 @@ def test_eval_integer_expression():
     ]
     for case in cases:
         evaluated = get_eval(case[0])
-        if not test_integer_object(case[1], evaluated):
-            return False
+        output = test_integer_object(case[1], evaluated)
+        if type(output) == tuple:
+            return output
     return True
 
 
@@ -82,15 +69,15 @@ def test_eval_boolean_expression():
     ]
     for case in cases:
         ret = get_eval(case[0])
-        if not test_boolean_object(ret, case[1]):
-            return False
+        output = test_boolean_object(ret, case[1])
+        if type(output) == tuple:
+            return output
     return True
 
 
 def test_null_object(obj: object.Object):
     if obj != evaluator.NULL:
-        print(f'obj is not NULL, got: {type(obj)}:{obj}')
-        return False
+        return False, f'obj is not NULL, got: {type(obj)}:{obj}'
     return True
 
 
@@ -116,21 +103,12 @@ def test_if_else_expression():
     for case in cases:
         ret = get_eval(case[0])
         if case[1] == NULL:
-            exe_ret = test_null_object(ret)
+            output = test_null_object(ret)
         else:
-            exe_ret = test_integer_object(case[1], ret)
-        if not exe_ret:
-            return False
+            output = test_integer_object(case[1], ret)
+        if type(output) == tuple:
+            return output
     return True
-
-
-def run_cases(func_list: list[Callable]):
-    for func in func_list:
-        func_name = func.__name__
-        if func():
-            print(f"Run case[{func_name}] passed")
-        else:
-            print(f"Run case[{func_name}] failed")
 
 
 def test_bang_operator():
@@ -143,18 +121,22 @@ def test_bang_operator():
         ("!!5", True),
         ("!0", True),
     ]
-    for case in cases:
-        ret = get_eval(case[0])
-        if not test_boolean_object(ret, case[1]):
-            return False
+    for cpde, expected in cases:
+        ret = get_eval(cpde)
+        ret = test_boolean_object(ret, expected)
+        if type(ret) == tuple:
+            return ret
     return True
 
 
 def test_boolean_object(obj: Object, expected: bool):
-    result = check_type(object.Boolean, obj)
+    output = check_type(object.Boolean, obj)
+    if type(output) == tuple:
+        return output
+    result = output
     if result.value != expected:
-        print(f"result.value has wrong value, got:{result.value} expected: {expected}")
-        return False
+        cause = f"result.value has wrong value, got:{result.value} expected: {expected}"
+        return False, cause
     return True
 
 
@@ -167,8 +149,9 @@ def test_return_statements():
     ]
     for case in cases:
         ret = get_eval(case[0])
-        if not test_integer_object(case[1], ret):
-            return False
+        output = test_integer_object(case[1], ret)
+        if type(output) == tuple:
+            return output
     return True
 
 
@@ -213,13 +196,13 @@ def test_error_handling():
         ("x", "identifier not found: x"),
         ('"Hello"-"world!"', "unknown operator: STRING - STRING"),
     ]
-    for case in cases:
-        ret = get_eval(case[0])
+    for code, expected in cases:
+        ret = get_eval(code)
         if not isinstance(ret, Error):
             print(f'no error obj returned,got: {type(ret)}:{ret}')
             continue
-        if ret.message != case[1]:
-            return False
+        if ret.message != expected:
+            return False, f"expected:{expected} got: {ret.message}"
     return True
 
 
@@ -232,8 +215,9 @@ def test_let_statements():
     ]
     for case in cases:
         ret = get_eval(case[0])
-        if not test_integer_object(case[1], ret):
-            return False
+        output = test_integer_object(case[1], ret)
+        if type(output) == tuple:
+            return output
     return True
 
 
@@ -243,15 +227,12 @@ def test_function_object():
     fn = check_type(object.Function, ret)
     parameters = fn.parameters
     if len(parameters) != 1:
-        print(f'function has wrong params, params: {parameters}')
-        return False
+        return False, f'function has wrong params, params: {parameters}'
     if parameters[0].string() != 'x':
-        print(f"parameter is not 'x', got: {parameters[0]}")
-        return False
+        return False, f"parameter is not 'x', got: {parameters[0]}"
     expected_body = '(x + 2)'
     if fn.body.string() != expected_body:
-        print(f"body is not {expected_body}, got {fn.body.string()}")
-        return False
+        return False, f"body is not {expected_body}, got {fn.body.string()}"
     return True
 
 
@@ -260,20 +241,19 @@ def test_string_literal():
     ret = get_eval(code)
     string = check_type(object.String, ret)
     if string.value != "Hello world!":
-        print(f'String has wrong value, got {string.value}')
-        return False
+        return False, f'String has wrong value, got {string.value}'
     return True
 
 
 def test_string_concat():
     code = '"Hello" + " " + "world!'
     ret = get_eval(code)
-    string = check_type(object.String, ret)
-    if string is None:
-        return False
+    output = check_type(object.String, ret)
+    if type(output) == tuple:
+        return output
+    string = output
     if string.value != "Hello world!":
-        print(f'String has wrong value, got {string.value}')
-        return False
+        return False, f'String has wrong value, got {string.value}'
     return True
 
 

@@ -10,11 +10,12 @@ INTEGER_OBJ = "INTEGER"
 BOOLEAN_OBJ = "BOOLEAN"
 RETURN_VALUE_OBJ = "RETURN_VALUE"
 ERROR_OBJ = "ERROR"
-FUNCTON_OBJ = "FUNCTION"
+FUNCTION_OBJ = "FUNCTION"
 STRING_OBJ = "STRING"
 BUILTIN_OBJ = "BUILTIN"
 ARRAY_OBJ = "ARRAY"
 HASH_OBJ = "HASH"
+QUOTE_BO = "QUOTE"
 
 
 @dataclass
@@ -158,7 +159,7 @@ class Function(Object):
     env: Environment = None
 
     def type(self) -> str:
-        return FUNCTON_OBJ
+        return FUNCTION_OBJ
 
     def inspect(self) -> str:
         params = []
@@ -245,3 +246,14 @@ class Hash(Object):
 
     def __repr__(self):
         return self.inspect()
+
+
+@dataclass
+class Quote(Object):
+    node: ast.Node = None
+
+    def type(self) -> str:
+        return QUOTE_BO
+
+    def inspect(self) -> str:
+        return f"QUOTE({self.node.string()})"

@@ -11,6 +11,10 @@ class Node:
     def literal(self) -> str:
         pass
 
+    @abstractmethod
+    def string(self) -> str:
+        pass
+
 
 class Statement(Node):
     token = None
@@ -21,7 +25,7 @@ class Statement(Node):
         pass
 
     @abstractmethod
-    def string(self):
+    def string(self) -> str:
         pass
 
     def __repr__(self):

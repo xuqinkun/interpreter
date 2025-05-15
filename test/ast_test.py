@@ -1,5 +1,6 @@
 from monkey_ast.ast import LetStatement, Identifier, Program
 from monkey_token.token import *
+from util.test_util import run_cases
 
 
 def test_string():
@@ -9,11 +10,9 @@ def test_string():
     program = Program(statements)
     code = program.string()
     if code != 'let var = anotherVar;':
-        print(f"program.string() wrong. got={code}")
-        return False
+        return False, f"program.string() wrong. got={code}"
     return True
 
 
 if __name__ == '__main__':
-    if test_string():
-        print('Passed')
+    run_cases([test_string])

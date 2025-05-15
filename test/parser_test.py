@@ -1,39 +1,7 @@
-from typing import Callable
-
 from lexer import lexer
 from monkey_ast.ast import *
 from monkey_parser.parser import Parser
-
-
-def check_parser_errors(p: Parser):
-    errors = p.errors
-    if not errors:
-        return False
-    print(f'parser has {len(errors)} errors')
-    for err in errors:
-        print(f'parse error:{err}')
-    return True
-
-
-def check_len(expected_len: int, statements: list):
-    if expected_len != len(statements):
-        print(f"Wrong statements number, expected {expected_len} got {len(statements)}")
-        return False
-    return True
-
-
-def check_type(expected_type: type, obj: object):
-    if not isinstance(obj, expected_type):
-        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
-    return expected_type.copy(obj)
-
-
-def parse(code):
-    l = lexer.get_lexer(code)
-    p = Parser.get_parser(l)
-    program = p.parse_program()
-    check_parser_errors(p)
-    return program
+from util.test_util import *
 
 
 def test_let_statements():
@@ -48,40 +16,38 @@ def test_let_statements():
         stmt = program.statements[0]
         if not test_let_statement(stmt, code[1]):
             return False
-        let = check_type(LetStatement, stmt)
-        if not test_literal_expression(let.value, code[2]):
-            return False
+        output = check_type(LetStatement, stmt)
+        if type(output) == tuple:
+            return output
+        output = test_literal_expression(output.value, code[2])
+        if type(output) == tuple:
+            return output
     return True
 
 
 def test_let_statement(s: Statement, name: str):
     if s.literal() != 'let':
-        print(f's.literal not "let" got {s.literal()}')
-        return False
+        return False, f's.literal not "let" got {s.literal()}'
     let_stmt = check_type(LetStatement, s)
+    if type(let_stmt) == tuple:
+        return let_stmt
     if let_stmt.name.value != name:
-        print(f'let_stmt.name.value not "{name}" got {let_stmt.name.value}')
-        return False
+        return False, f'let_stmt.name.value not "{name}" got {let_stmt.name.value}'
     if let_stmt.name.literal() != name:
-        print(f'let_stmt.name.literal not "{name}" got {let_stmt.name.literal}')
-        return False
+        return False, f'let_stmt.name.literal not "{name}" got {let_stmt.name.literal}'
     return True
 
 
 def check_let_statements(stmt: Statement, name: str):
     if stmt.literal() != "let":
-        print(f"Expect let, got {stmt.literal()}")
-        return False
+        return False, f"Expect let, got {stmt.literal()}"
     if not isinstance(stmt, LetStatement):
-        print(f"stmt not LetStatement, got={type(stmt)}")
-        return False
+        return False, f"stmt not LetStatement, got={type(stmt)}"
     let_stmt = LetStatement(stmt.token, stmt.name)
     if let_stmt.name.value != name:
-        print(f"let_stmt.name.value not {name} got {let_stmt.name.value}")
-        return False
+        return False, f"let_stmt.name.value not {name} got {let_stmt.name.value}"
     if let_stmt.name.literal() != name:
-        print(f"let_stmt.name.literal() not {name} got {let_stmt.name.literal()}")
-        return False
+        return False, f"let_stmt.name.literal() not {name} got {let_stmt.name.literal()}"
     return True
 
 
@@ -92,28 +58,35 @@ def test_return_statement():
     return 993322;
     """
     program = parse(code)
-    check_len(3, program.statements)
+    output = check_len(3, program.statements)
+    if type(output) == tuple:
+        return output
     for stmt in program.statements:
         if not isinstance(stmt, ReturnStatement):
-            print(f"stmt not ReturnStatement, got={type(stmt)}")
-            continue
+            return False, f"stmt not ReturnStatement, got={type(stmt)}"
         return_stmt = ReturnStatement(stmt.token)
         if return_stmt.literal() != 'return':
-            print(f'return_stmt.literal not return, got{return_stmt.literal()}')
+            return False, f'return_stmt.literal not return, got{return_stmt.literal()}'
     return True
 
 
 def test_identifier_expression():
     code = 'foobar;'
     program = parse(code)
-    check_len(1, program.statements)
+    output = check_len(1, program.statements)
+    if type(output) == tuple:
+        return output
     stmt = program.statements[0]
     exp = check_type(ExpressionStatement, stmt)
+    if type(exp) == tuple:
+        return exp
     ident = check_type(Identifier, exp.expression)
+    if type(ident) == tuple:
+        return ident
     if ident.value != 'foobar':
-        raise Exception(f'ident.value is not foobar, got {ident.value}')
+        return False, f'ident.value is not foobar, got {ident.value}'
     if ident.literal() != 'foobar':
-        raise Exception(f'ident.literal is not foobar, got {ident.literal()}')
+        return False, f'ident.literal is not foobar, got {ident.literal()}'
     return True
 
 
@@ -148,11 +121,9 @@ def test_parsing_prefix_expressions():
 def test_integer_literal(exp: Expression, value: int):
     intl = check_type(IntegerLiteral, exp)
     if intl.value != value:
-        print(f'intl.value not {value}. got {intl.value}')
-        return False
+        return False, f'intl.value not {value}. got {intl.value}'
     if intl.literal() != f'{value}':
-        print(f'intl.literal not {value}. got {intl.literal()}')
-        return False
+        return False, f'intl.literal not {value}. got {intl.literal()}'
     return True
 
 
@@ -317,8 +288,7 @@ def test_literal_expression(exp: Expression, expected: object):
         return test_identifier(exp, str(expected))
     elif expected_type == bool:
         return test_boolean_expression(exp, bool(expected))
-    print(f'type of exp not handled. got{expected_type}')
-    return False
+    return False, f'type of exp not handled. got{expected_type}'
 
 
 def test_infix_expression(exp: Expression, left: object,
@@ -337,11 +307,9 @@ def test_infix_expression(exp: Expression, left: object,
 def test_boolean_expression(exp: Expression, value: bool):
     check_type(Boolean, exp)
     if exp.value != value:
-        print(f'exp.value not {value} got {exp.value}')
-        return False
+        return False, f'exp.value not {value} got {exp.value}'
     if exp.literal() != str(value).lower():
-        print(f"literal not {value} got: {exp.literal()}")
-        return False
+        return False, f"literal not {value} got: {exp.literal()}"
     return True
 
 
@@ -499,7 +467,7 @@ def test_parsing_hash_literal_string_with_expressions():
     stmt = check_type(ExpressionStatement, program.statements[0])
     entry = check_type(HashLiteral, stmt.expression)
     check_len(3, entry.pairs)
-    expected = {"one": (0, '+' ,1), "two": (10, '-' ,8), "three": (15, '/' ,5)}
+    expected = {"one": (0, '+', 1), "two": (10, '-', 8), "three": (15, '/', 5)}
     for key, value in entry.pairs:
         if not isinstance(key, StringLiteral):
             print(f"key is not StringLiteral. got {key}")
@@ -516,14 +484,6 @@ def test_parsing_empty_hash_literal():
     entry = check_type(HashLiteral, stmt.expression)
     check_len(0, entry.pairs)
     return True
-
-
-def run_cases(funcs: list[Callable]):
-    for func in funcs:
-        if func():
-            print(f'{func.__name__} passed!')
-        else:
-            print(f'{func.__name__} failed!')
 
 
 if __name__ == '__main__':
