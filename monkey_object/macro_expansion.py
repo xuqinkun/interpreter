@@ -10,15 +10,13 @@ def is_macro_definition(stmt: ast.Statement):
     let_stmt = check_type(ast.LetStatement, stmt)
     if type(let_stmt) == tuple:
         return False
-    macro = check_type(ast.MacroLiteral, let_stmt.value)
-    if type(macro) == tuple:
-        return False
-    return True
+    _, ok = check_type(ast.MacroLiteral, let_stmt.value)
+    return ok
 
 
 def add_macro(stmt: ast.Statement, env: object.Environment):
     let_stmt = check_type(ast.LetStatement, stmt)
-    macro_literal = check_type(ast.MacroLiteral, let_stmt.value)
+    macro_literal, _ = check_type(ast.MacroLiteral, let_stmt.value)
     macro = object.Macro(parameters=macro_literal.parameters, env=env, body=macro_literal.body)
     env.put(let_stmt.name.value, macro)
 
@@ -35,8 +33,8 @@ def define_macro(program: ast.Program, env: object.Environment):
 
 
 def is_macro_call(exp: ast.CallExpression, env: object.Environment):
-    identifier = check_type(ast.Identifier, exp.function)
-    if type(identifier) == tuple:
+    identifier, ok = check_type(ast.Identifier, exp.function)
+    if not ok:
         return None, False
     obj = env.get(identifier.value)
     if obj == object.NULL:
@@ -62,8 +60,8 @@ def extend_macro_env(macro: object.Macro, args: list[object.Quote]):
 
 def expand_macro(program: ast.Program, env: object.Environment):
     def modifier(node: ast.Node):
-        call = check_type(ast.CallExpression, node)
-        if type(call) == tuple:
+        call, ok = check_type(ast.CallExpression, node)
+        if not ok:
             return node
         macro, ok = is_macro_call(call, env)
         if not ok:

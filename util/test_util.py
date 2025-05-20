@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from typing import Callable, List
-from monkey_parser.parser import Parser
-from monkey_lexer import lexer
-from monkey_object.object import Error, Environment
+from typing import Callable, List, Tuple, Optional, Union
+
 from monkey_evaluate.evaluator import evaluate
+from monkey_lexer import lexer
+from monkey_object import object
+from monkey_parser.parser import Parser
 
 
 def run_cases(funcs: List[Callable]):
@@ -38,12 +39,6 @@ def check_len(expected_len: int, statements: list):
     return True
 
 
-def check_type(expected_type: type, obj: object):
-    if not isinstance(obj, expected_type):
-        raise Exception(f"Wrong type error, expected: {expected_type} actual:{type(obj)}")
-    return expected_type.copy(obj)
-
-
 def parse(code):
     l = lexer.get_lexer(code)
     p = Parser.get_parser(l)
@@ -52,16 +47,16 @@ def parse(code):
     return program
 
 
-def check_type(expected_type: type, obj: object):
-    if isinstance(obj, Error):
-        return obj
+def check_type(expected_type: type, obj: object) -> Tuple[Union[object.Object, str], bool]:
+    if isinstance(obj, object.Error):
+        return obj, True
     if not isinstance(obj, expected_type):
-        return False, f"Wrong type error, expected: {expected_type} actual:{type(obj)}"
-    return expected_type.copy(obj)
+        return f"Wrong type error, expected: {expected_type} actual:{type(obj)}", False
+    return expected_type.copy(obj), True
 
 
 def get_eval(code: str):
     p = Parser.get_parser(lexer.get_lexer(code))
     program = p.parse_program()
-    env = Environment()
+    env = object.Environment()
     return evaluate(program, env)

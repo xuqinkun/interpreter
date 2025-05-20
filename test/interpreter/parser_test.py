@@ -16,8 +16,8 @@ def test_let_statements():
         stmt = program.statements[0]
         if not test_let_statement(stmt, code[1]):
             return False
-        output = check_type(LetStatement, stmt)
-        if type(output) == tuple:
+        output, ok = check_type(LetStatement, stmt)
+        if not ok:
             return output
         output = test_literal_expression(output.value, code[2])
         if type(output) == tuple:
@@ -28,8 +28,8 @@ def test_let_statements():
 def test_let_statement(s: Statement, name: str):
     if s.literal() != 'let':
         return False, f's.literal not "let" got {s.literal()}'
-    let_stmt = check_type(LetStatement, s)
-    if type(let_stmt) == tuple:
+    let_stmt, ok = check_type(LetStatement, s)
+    if not ok:
         return let_stmt
     if let_stmt.name.value != name:
         return False, f'let_stmt.name.value not "{name}" got {let_stmt.name.value}'
@@ -77,11 +77,11 @@ def test_identifier_expression():
     if type(output) == tuple:
         return output
     stmt = program.statements[0]
-    exp = check_type(ExpressionStatement, stmt)
-    if type(exp) == tuple:
+    exp, ok = check_type(ExpressionStatement, stmt)
+    if not ok:
         return exp
-    ident = check_type(Identifier, exp.expression)
-    if type(ident) == tuple:
+    ident, ok = check_type(Identifier, exp.expression)
+    if not ok:
         return ident
     if ident.value != 'foobar':
         return False, f'ident.value is not foobar, got {ident.value}'
@@ -95,8 +95,8 @@ def test_integer_literal_expression():
     program = parse(code)
     check_len(1, program.statements)
     stmt = program.statements[0]
-    exp = check_type(ExpressionStatement, stmt)
-    literal = check_type(IntegerLiteral, exp.expression)
+    exp, _ = check_type(ExpressionStatement, stmt)
+    literal, _ = check_type(IntegerLiteral, exp.expression)
     if literal.value != 51:
         raise Exception(f"literal.value expected: {51}, got: {literal.value}")
     if literal.literal() != "51":
@@ -109,8 +109,8 @@ def test_parsing_prefix_expressions():
     for code in codes:
         program = parse(code[0])
         check_len(1, program.statements)
-        stmt = check_type(ExpressionStatement, program.statements[0])
-        exp = check_type(PrefixExpression, stmt.expression)
+        stmt, _ = check_type(ExpressionStatement, program.statements[0])
+        exp, _ = check_type(PrefixExpression, stmt.expression)
         if exp.operator != code[1]:
             raise Exception(f"exp.operator is not '{code[1]}'. got {exp.operator}")
         if not test_integer_literal(exp.right, code[2]):
@@ -119,7 +119,7 @@ def test_parsing_prefix_expressions():
 
 
 def test_integer_literal(exp: Expression, value: int):
-    intl = check_type(IntegerLiteral, exp)
+    intl, _ = check_type(IntegerLiteral, exp)
     if intl.value != value:
         return False, f'intl.value not {value}. got {intl.value}'
     if intl.literal() != f'{value}':
@@ -270,7 +270,7 @@ def test_operator_precedence_parsing():
 
 
 def test_identifier(exp: Expression, value: str):
-    ident = check_type(Identifier, exp)
+    ident, _ = check_type(Identifier, exp)
     if ident.value != value:
         print(f'ident.value not {value}. got {ident.value}')
         return False
@@ -293,7 +293,7 @@ def test_literal_expression(exp: Expression, expected: object):
 
 def test_infix_expression(exp: Expression, left: object,
                           operator: str, right: object):
-    op_exp = check_type(InfixExpression, exp)
+    op_exp, _ = check_type(InfixExpression, exp)
     if not test_literal_expression(op_exp.left, left):
         return False
     if op_exp.operator != operator:
@@ -317,13 +317,13 @@ def test_if_expression():
     code = "if (x < y) {x}"
     program = parse(code)
     check_len(1, program.statements)
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    exp = check_type(IFExpression, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    exp, _ = check_type(IFExpression, stmt.expression)
     if not test_infix_expression(exp.condition, "x", "<", "y"):
         return False
     statements = exp.consequence.statements
     check_len(1, statements)
-    consequence = check_type(ExpressionStatement, statements[0])
+    consequence, _ = check_type(ExpressionStatement, statements[0])
     if not test_identifier(consequence.expression, "x"):
         return False
     if exp.alternative is not None:
@@ -336,21 +336,21 @@ def test_if_else_expression():
     program = parse(code)
     check_len(1, program.statements)
 
-    stmt = check_type(ExpressionStatement, program.statements[0])
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
 
-    exp = check_type(IFExpression, stmt.expression)
+    exp, _ = check_type(IFExpression, stmt.expression)
     if not test_infix_expression(exp.condition, "x", "<", "y"):
         return False
     statements = exp.consequence.statements
     check_len(1, statements)
 
-    consequence = check_type(ExpressionStatement, statements[0])
+    consequence, _ = check_type(ExpressionStatement, statements[0])
     if not test_identifier(consequence.expression, "x"):
         return False
     alternative = exp.alternative
     check_len(1, alternative.statements)
 
-    alter = check_type(ExpressionStatement, alternative.statements[0])
+    alter, _ = check_type(ExpressionStatement, alternative.statements[0])
     if not test_identifier(alter.expression, "y"):
         return False
     return True
@@ -361,15 +361,15 @@ def test_function_literal_parsing():
     program = parse(code)
     check_len(1, program.statements)
 
-    stmt = check_type(ExpressionStatement, program.statements[0])
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
 
-    func = check_type(FunctionLiteral, stmt.expression)
+    func, _ = check_type(FunctionLiteral, stmt.expression)
     check_len(2, func.parameters)
     test_literal_expression(func.parameters[0], "x")
     test_literal_expression(func.parameters[1], "y")
     check_len(1, func.body.statements)
 
-    body_stmt = check_type(ExpressionStatement, func.body.statements[0])
+    body_stmt, _ = check_type(ExpressionStatement, func.body.statements[0])
     if not test_infix_expression(body_stmt.expression, "x", "+", "y"):
         return False
     return True
@@ -383,8 +383,8 @@ def test_function_parameter_parsing():
     ]
     for code in codes:
         program = parse(code[0])
-        stmt = check_type(ExpressionStatement, program.statements[0])
-        func = check_type(FunctionLiteral, stmt.expression)
+        stmt, _ = check_type(ExpressionStatement, program.statements[0])
+        func, _ = check_type(FunctionLiteral, stmt.expression)
         check_len(len(code[1]), func.parameters)
         for param, ident in zip(func.parameters, code[1]):
             if not test_literal_expression(param, ident):
@@ -397,8 +397,8 @@ def test_call_expression_parsing():
     program = parse(code)
     if not check_len(1, program.statements):
         return False
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    exp = check_type(CallExpression, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    exp, _ = check_type(CallExpression, stmt.expression)
     if not test_identifier(exp.function, "add"):
         return False
     check_len(3, exp.arguments)
@@ -411,8 +411,8 @@ def test_call_expression_parsing():
 def test_string_literal_expression():
     code = '"hello world";'
     program = parse(code)
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    literal = check_type(StringLiteral, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    literal, _ = check_type(StringLiteral, stmt.expression)
     if literal.value != 'hello world':
         print(f'literal.value not hello world, got {literal.value}')
         return False
@@ -422,8 +422,8 @@ def test_string_literal_expression():
 def test_parsing_array_literals():
     code = "[1, 2 * 2, 3+3]"
     program = parse(code)
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    array = check_type(ArrayLiteral, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    array, _ = check_type(ArrayLiteral, stmt.expression)
     check_len(3, array.elements)
     if not test_integer_literal(array.elements[0], 1):
         return False
@@ -436,8 +436,8 @@ def test_parsing_array_literals():
 
 def test_parsing_index_expression():
     program = parse("myArray[1 + 1]")
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    index_exp = check_type(IndexExpression, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    index_exp, _ = check_type(IndexExpression, stmt.expression)
     if not test_identifier(index_exp.left, "myArray"):
         return False
     if not test_infix_expression(index_exp.index, 1, '+', 1):
@@ -448,8 +448,8 @@ def test_parsing_index_expression():
 def test_parsing_hash_literal_string_key():
     code = """{"one":1, "two":2, "three":3}"""
     program = parse(code)
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    entry = check_type(HashLiteral, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    entry, _ = check_type(HashLiteral, stmt.expression)
     check_len(3, entry.pairs)
     expected = {"one": 1, "two": 2, "three": 3}
     for (key, value) in entry.pairs.items():
@@ -464,8 +464,8 @@ def test_parsing_hash_literal_string_key():
 def test_parsing_hash_literal_string_with_expressions():
     code = """{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"""
     program = parse(code)
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    entry = check_type(HashLiteral, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    entry, _ = check_type(HashLiteral, stmt.expression)
     check_len(3, entry.pairs)
     expected = {"one": (0, '+', 1), "two": (10, '-', 8), "three": (15, '/', 5)}
     for key, value in entry.pairs:
@@ -480,8 +480,8 @@ def test_parsing_hash_literal_string_with_expressions():
 def test_parsing_empty_hash_literal():
     code = "{}"
     program = parse(code)
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    entry = check_type(HashLiteral, stmt.expression)
+    stmt, _ = check_type(ExpressionStatement, program.statements[0])
+    entry, _ = check_type(HashLiteral, stmt.expression)
     check_len(0, entry.pairs)
     return True
 
@@ -492,11 +492,11 @@ def test_parsing_macro_literal():
     output = check_len(1, program.statements)
     if type(output) == tuple:
         return output
-    stmt = check_type(ExpressionStatement, program.statements[0])
-    if type(stmt) == tuple:
+    stmt, ok = check_type(ExpressionStatement, program.statements[0])
+    if not ok:
         return stmt
-    macro = check_type(MacroLiteral, stmt.expression)
-    if type(macro) == tuple:
+    macro, ok = check_type(MacroLiteral, stmt.expression)
+    if not ok:
         return macro
     output = check_len(2, macro.parameters)
     if type(output) == tuple:
@@ -510,8 +510,8 @@ def test_parsing_macro_literal():
     output = check_len(1, macro.body.statements)
     if type(output) == tuple:
         return output
-    body_stmt = check_type(ExpressionStatement, macro.body.statements[0])
-    if type(body_stmt) == tuple:
+    body_stmt, ok = check_type(ExpressionStatement, macro.body.statements[0])
+    if not ok:
         return body_stmt
     return test_infix_expression(body_stmt.expression, "x", "+", "y")
 

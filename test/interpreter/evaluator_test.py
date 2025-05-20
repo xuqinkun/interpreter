@@ -3,12 +3,12 @@ from monkey_object import object
 from monkey_evaluate import evaluator
 from monkey_parser.parser import *
 from monkey_object.object import *
-from util.test_util import *
+from util import test_util
 
 
 def test_integer_object(expected: int, obj: Object):
-    output = check_type(Integer, obj)
-    if type(output) == tuple:
+    output, ok = test_util.check_type(Integer, obj)
+    if not ok:
         return output
     result = output
     if result.value != expected:
@@ -36,7 +36,7 @@ def test_eval_integer_expression():
         ("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50),
     ]
     for case in cases:
-        evaluated = get_eval(case[0])
+        evaluated = test_util.get_eval(case[0])
         output = test_integer_object(case[1], evaluated)
         if type(output) == tuple:
             return output
@@ -68,7 +68,7 @@ def test_eval_boolean_expression():
         ("(1 > 2) || false", False),
     ]
     for case in cases:
-        ret = get_eval(case[0])
+        ret = test_util.get_eval(case[0])
         output = test_boolean_object(ret, case[1])
         if type(output) == tuple:
             return output
@@ -101,7 +101,7 @@ def test_if_else_expression():
         """, 10),
     ]
     for case in cases:
-        ret = get_eval(case[0])
+        ret = test_util.get_eval(case[0])
         if case[1] == NULL:
             output = test_null_object(ret)
         else:
@@ -122,7 +122,7 @@ def test_bang_operator():
         ("!0", True),
     ]
     for cpde, expected in cases:
-        ret = get_eval(cpde)
+        ret = test_util.get_eval(cpde)
         ret = test_boolean_object(ret, expected)
         if type(ret) == tuple:
             return ret
@@ -130,8 +130,8 @@ def test_bang_operator():
 
 
 def test_boolean_object(obj: Object, expected: bool):
-    output = check_type(object.Boolean, obj)
-    if type(output) == tuple:
+    output, ok = test_util.check_type(object.Boolean, obj)
+    if not ok:
         return output
     result = output
     if result.value != expected:
@@ -148,7 +148,7 @@ def test_return_statements():
         ("9; return 2 * 5; 9;", 10),
     ]
     for case in cases:
-        ret = get_eval(case[0])
+        ret = test_util.get_eval(case[0])
         output = test_integer_object(case[1], ret)
         if type(output) == tuple:
             return output
@@ -197,7 +197,7 @@ def test_error_handling():
         ('"Hello"-"world!"', "unknown operator: STRING - STRING"),
     ]
     for code, expected in cases:
-        ret = get_eval(code)
+        ret = test_util.get_eval(code)
         if not isinstance(ret, Error):
             print(f'no error obj returned,got: {type(ret)}:{ret}')
             continue
@@ -214,7 +214,7 @@ def test_let_statements():
         ("let a = 5; let b = a; let c = a + b + 5; c;", 15),
     ]
     for case in cases:
-        ret = get_eval(case[0])
+        ret = test_util.get_eval(case[0])
         output = test_integer_object(case[1], ret)
         if type(output) == tuple:
             return output
@@ -223,8 +223,8 @@ def test_let_statements():
 
 def test_function_object():
     code = 'fn(x) { x + 2; };'
-    ret = get_eval(code)
-    fn = check_type(object.Function, ret)
+    ret = test_util.get_eval(code)
+    fn, _ = test_util.check_type(object.Function, ret)
     parameters = fn.parameters
     if len(parameters) != 1:
         return False, f'function has wrong params, params: {parameters}'
@@ -238,8 +238,8 @@ def test_function_object():
 
 def test_string_literal():
     code = '"Hello world!"'
-    ret = get_eval(code)
-    string = check_type(object.String, ret)
+    ret = test_util.get_eval(code)
+    string, ok = test_util.check_type(object.String, ret)
     if string.value != "Hello world!":
         return False, f'String has wrong value, got {string.value}'
     return True
@@ -247,9 +247,9 @@ def test_string_literal():
 
 def test_string_concat():
     code = '"Hello" + " " + "world!'
-    ret = get_eval(code)
-    output = check_type(object.String, ret)
-    if type(output) == tuple:
+    ret = test_util.get_eval(code)
+    output, ok = test_util.check_type(object.String, ret)
+    if not ok:
         return output
     string = output
     if string.value != "Hello world!":
@@ -267,7 +267,7 @@ def test_function_application():
         ("fn(x) { x; }(5)", 5),
     ]
     for case in cases:
-        ret = get_eval(case[0])
+        ret = test_util.get_eval(case[0])
         if not test_integer_object(case[1], ret):
             return False
     return True
@@ -282,12 +282,12 @@ def test_builtin_functions():
         ('len("one", "two")', "wrong number of arguments. got 2, want 1"),
     ]
     for case in cases:
-        ret = get_eval(case[0])
+        ret = test_util.get_eval(case[0])
         if isinstance(case[1], int):
             if not test_integer_object(case[1], ret):
                 return False
         else:
-            error = check_type(Error, ret)
+            error, ok = test_util.check_type(Error, ret)
             if error.message != case[1]:
                 print(f'wrong error message. expected "{case[1]}" got "{error.message}"')
                 return False
@@ -296,7 +296,7 @@ def test_builtin_functions():
 
 def test_array_literal():
     code = "[1, 2*2, 3+3]"
-    ret = get_eval(code)
+    ret = test_util.get_eval(code)
     if not isinstance(ret, Array):
         print(f"object is not Array, got {type(ret)} {ret}")
         return False
@@ -356,7 +356,7 @@ def test_array_index_expression():
         ),
     ]
     for (code, expected) in cases:
-        ret = get_eval(code)
+        ret = test_util.get_eval(code)
         if type(expected) == int:
             passed = test_integer_object(expected, ret)
         else:
@@ -375,7 +375,7 @@ def test_hash_literal():
         true: 5,
         false: 6}
     """
-    ret = get_eval(code)
+    ret = test_util.get_eval(code)
     if not isinstance(ret, Hash):
         print(f"eval didn't return Hash. got {type(ret)}:{ret}")
         return False
@@ -425,7 +425,7 @@ def test_hash_index_expression():
         ),
     ]
     for code, expected in cases:
-        ret = get_eval(code)
+        ret = test_util.get_eval(code)
         if type(expected) == int:
             status = test_integer_object(expected, ret)
         else:
@@ -454,4 +454,4 @@ if __name__ == '__main__':
         test_hash_literal,
         test_hash_index_expression
     ]
-    run_cases(tests)
+    test_util.run_cases(tests)
