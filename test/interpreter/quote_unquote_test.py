@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from util.test_util import *
-from object.object import Quote
+from monkey_object.object import Quote
 
 
 def test_quote_unquote():

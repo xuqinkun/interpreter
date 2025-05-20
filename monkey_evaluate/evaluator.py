@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List
-from object.object import *
-from evaluate.quote_unquote import quote
+from monkey_object.object import *
+from monkey_evaluate.quote_unquote import quote
 
 
 def length(*args):

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from monkey_ast import ast
-from object import object
+from monkey_object import object
 from util.test_util import check_type
-from evaluate.evaluator import evaluate
+from monkey_evaluate.evaluator import evaluate
 from monkey_ast.modify import modify
 
 

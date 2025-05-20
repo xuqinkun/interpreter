@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from monkey_ast import ast
-from object import object
+from monkey_object import object
 from monkey_ast import modify
 from monkey_token import token
 
@@ -34,7 +34,7 @@ def convert_object_to_ast_node(obj: object.Object):
 
 
 def eval_unquote_calls(node: ast.Expression, env: object.Environment):
-    from evaluate.evaluator import evaluate
+    from monkey_evaluate.evaluator import evaluate
     def modifier(node):
         output = is_unquote_call(node)
         if type(output) == tuple:

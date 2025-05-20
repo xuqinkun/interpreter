@@ -1,7 +1,7 @@
 import inspect
 from monkey_token.token import *
 from util.timer import Timer
-from lexer.lexer import get_lexer, Lexer
+from monkey_lexer.lexer import get_lexer, Lexer
 
 timer = Timer()
 

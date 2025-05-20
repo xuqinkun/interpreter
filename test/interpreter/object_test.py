@@ -1,5 +1,5 @@
 from parser_test import run_cases
-from object.object import String
+from monkey_object.object import String
 
 
 def test_string_hash_key():

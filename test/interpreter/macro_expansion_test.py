@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from object import object
+from monkey_object import object
 from util.test_util import *
-from object.macro_expansion import define_macro, expand_macro
+from monkey_object.macro_expansion import define_macro, expand_macro
 
 
 def test_define_macro():

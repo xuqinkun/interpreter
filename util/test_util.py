@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from typing import Callable
+from typing import Callable, List
 from monkey_parser.parser import Parser
-from lexer import lexer
-from object.object import Error, Environment
-from evaluate.evaluator import evaluate
+from monkey_lexer import lexer
+from monkey_object.object import Error, Environment
+from monkey_evaluate.evaluator import evaluate
 
 
-def run_cases(funcs: list[Callable]):
+def run_cases(funcs: List[Callable]):
     passed_cases = 0
     total_cases = len(funcs)
     failed_list = {}

@@ -1,4 +1,4 @@
-from lexer import lexer
+from monkey_lexer import lexer
 from monkey_ast.ast import *
 from monkey_parser.parser import Parser
 from util.test_util import *

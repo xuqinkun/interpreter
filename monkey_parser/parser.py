@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Optional, Dict, Callable
 
-from lexer import lexer
-from lexer.lexer import Lexer
+from monkey_lexer import lexer
+from monkey_lexer.lexer import Lexer
 from monkey_ast.ast import *
 from monkey_token.token import *
 

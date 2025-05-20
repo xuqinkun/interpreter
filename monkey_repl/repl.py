@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
-from evaluate.evaluator import evaluate, NULL
+from monkey_evaluate.evaluator import evaluate, NULL
 from monkey_parser.parser import parse
-from object.object import Environment
-from object.macro_expansion import define_macro, expand_macro
+from monkey_object.object import Environment
+from monkey_object.macro_expansion import define_macro, expand_macro
 
 PROMPT = ">>"
 

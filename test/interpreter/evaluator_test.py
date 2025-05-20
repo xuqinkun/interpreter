@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from object import object
-from evaluate import evaluator
+from monkey_object import object
+from monkey_evaluate import evaluator
 from monkey_parser.parser import *
-from object.object import *
+from monkey_object.object import *
 from util.test_util import *
 
 
