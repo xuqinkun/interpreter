@@ -6,10 +6,10 @@ from monkey_object import object
 from util import test_util
 
 def concat_instructions(instructions_list: List[code.Instructions]):
-    out = []
+    out = code.Instructions()
     for ins in instructions_list:
-        out.append(ins.string())
-    return ''.join(out)
+        out += ins
+    return out
 
 
 def test_instructions(expected: List[code.Instructions], actual: code.Instructions):
