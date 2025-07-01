@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Tuple
 Opcode = int  # or use 'bytes' if you specifically want a single byte
 
 OpConstant = 1
+OpAdd = 2
 
 
 @dataclass
@@ -40,6 +41,7 @@ class Instructions(bytes):
 
 definitions: Dict[Opcode, Definition] = {
     OpConstant: Definition(name="OpConstant", operand_widths=[2]),
+    OpAdd: Definition(name="OpAdd", operand_widths=[]),
 }
 
 

@@ -1,13 +1,13 @@
 from monkey_code.code import *
 from util.test_util import run_cases
 
-def test_name():
+def test_make():
     cases = [
-        (OpConstant, [65534],
-        [OpConstant, 255, 254])
+        (OpConstant, [65534], [OpConstant, 255, 254]),
+        (OpAdd, [], [OpAdd])
     ]
     for (op, operands, expected) in cases:
-        instruction = make(op, operands)
+        instruction = make(op, *operands)
         if len(instruction) != len(expected):
             return False, f"instruction has wrong length. want={len(expected)}, got={len(instruction)}"
         for i, exp in enumerate(expected):
@@ -19,6 +19,6 @@ def test_name():
 
 if __name__ == '__main__':
     cases = [
-        test_name
+        test_make
     ]
     run_cases(cases)
