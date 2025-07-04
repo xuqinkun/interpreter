@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import List
 
-from win32com.client import constants
-
 from monkey_ast import ast
 from monkey_code import code
 from monkey_object import object

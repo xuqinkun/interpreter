@@ -17,7 +17,7 @@ class Definition:
 
 class Instructions(bytes):
 
-    def string(self):
+    def __str__(self):
         out = StringIO()
         i = 0
         while i < len(self):
@@ -27,14 +27,19 @@ class Instructions(bytes):
                 continue
             operands, n_bytes = read_operands(define, self[i + 1:])
             out.write(f"{i:04d} {self.format(define, operands)}\n")
-            i += 1 + n_bytes
+            i += (1 + n_bytes)
         return out.getvalue()
+
+    def __repr__(self):
+        return self.__str__()
 
     def format(self, define: Definition, operands: List[int]):
         operand_count = len(define.operand_widths)
         if len(operands) != operand_count:
             return f"ERROR: operand len {len(operands)} does not match defined {operand_count}\n"
-        if operand_count == 1:
+        if operand_count == 0:
+            return define.name
+        elif operand_count == 1:
             return f"{define.name} {operands[0]}"
         return f"ERROR: unhandled operand_count for {define.name}\n"
 
@@ -73,8 +78,7 @@ def read_operands(define: Definition, ins: bytes):
     operands = [0] * len(define.operand_widths)
     offset = 0
     for i, width in enumerate(define.operand_widths):
-        if width == 2:
-            operands[i] = read_uint16(ins[offset:offset + 2])
+        operands[i] = read_uint16(ins[offset:offset + width])
         offset += width
     return operands, offset
 

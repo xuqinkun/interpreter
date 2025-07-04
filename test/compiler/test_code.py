@@ -3,19 +3,15 @@ from util import test_util
 
 def test_instructions_string():
     instructions = [
-        code.make(code.OpConstant, 1),
+        code.make(code.OpAdd),
         code.make(code.OpConstant, 2),
         code.make(code.OpConstant, 65535),
     ]
-    expected  = """
-        0000 OpConstant 1
-        0003 OpConstant 2
-        0006 OpConstant 65535
-    """
-    concat = b''.join(instructions)
+    expected  = "0000 OpAdd\n0001 OpConstant 2\n0004 OpConstant 65535\n"
 
-    if str(concat) != expected:
-        return f"instructions wrongly formatted. \nwant={expected} got={concat}"
+    concatenated = code.Instructions(b''.join(instructions))
+    if str(concatenated) != expected:
+        return False, f"instructions wrongly formatted. \nwant={expected} got={concatenated}"
     return None
 
 
