@@ -36,6 +36,13 @@ class VM:
                 err = self.push(self.constants[const_index])
                 if err is not None:
                     return err
+            elif op == code.OpAdd:
+                right = self.pop()
+                left = self.pop()
+                left_val = left.value
+                right_val = right.value
+                result = left_val + right_val
+                self.push(object.Integer(result))
             ip += 1
         return None
 
@@ -45,3 +52,8 @@ class VM:
         self.stack[self.sp] = obj
         self.sp += 1
         return None
+
+    def pop(self):
+        o = self.stack[self.sp - 1]
+        self.sp -= 1
+        return o

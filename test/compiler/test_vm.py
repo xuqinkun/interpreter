@@ -28,6 +28,7 @@ def run_vm_test(cases: List[Tuple[str, int]]):
             return f"vm error: {err}"
         stack_elem = vm.peek()
         test_expected_object(expected, stack_elem)
+    return True
 
 
 def test_expected_object(expected, actual: object.Object):
@@ -38,5 +39,6 @@ def test_expected_object(expected, actual: object.Object):
 
 
 if __name__ == '__main__':
-    tests = [("1", 1), ("2", 2), ("1+2", 2)]
-    run_vm_test(tests)
+    tests = [("1", 1), ("2", 2), ("1+2", 3)]
+    if run_vm_test(tests):
+        print('Accepted')

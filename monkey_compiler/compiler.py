@@ -38,6 +38,10 @@ class Compiler:
             err = self.compile(node.right)
             if err is not None:
                 return err
+            if node.operator == '+':
+                self.emit(code.OpAdd)
+            else:
+                return f"unknown operator {node.operator}"
         elif isinstance(node, ast.IntegerLiteral):
             integer = object.Integer(node.value)
             pos = self.add_constant(integer)

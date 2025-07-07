@@ -6,16 +6,13 @@ from monkey_object import object
 from util import test_util
 
 def concat_instructions(instructions_list: List[code.Instructions]):
-    out = code.Instructions()
-    for ins in instructions_list:
-        out += ins
-    return out
+    return code.Instructions(b''.join(instructions_list))
 
 
 def test_instructions(expected: List[code.Instructions], actual: code.Instructions):
     concat = concat_instructions(expected)
     if len(actual) != len(concat):
-        return f"wrong instructions length.\n want={concat} got={actual}"
+        return f"wrong instructions length.\n want={str(concat)} got={str(actual)}"
     for i, ins in enumerate(concat):
         if actual[i] != ins:
             return f"wrong instruction at {i}. want={concat} got={actual}"
@@ -51,7 +48,7 @@ def run_compiler_tests(cases: List[Tuple]):
         if err is not None:
             return False, f"compile error: {err}"
         bytecode = compiler.bytecode()
-        err = test_instructions(expected_instructions, bytecode.instructions)
+        err = test_instructions(expected_instructions, code.Instructions(bytecode.instructions))
         if err is not None:
             return False, f"test_instructions failed: {err}"
         err = test_constants(expected_constants, bytecode.constants)
@@ -62,7 +59,8 @@ def run_compiler_tests(cases: List[Tuple]):
 def test_integer_arithmetic():
     cases = [
         ("1+2", {1, 2}, [code.make(code.OpConstant, 0),
-                        code.make(code.OpConstant, 1)])
+                        code.make(code.OpConstant, 1),
+                         code.make(code.OpAdd)])
     ]
     err = run_compiler_tests(cases)
     if err is not None:
