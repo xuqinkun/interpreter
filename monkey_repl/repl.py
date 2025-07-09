@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import sys
-from monkey_evaluate.evaluator import evaluate, NULL
+
+from monkey_compiler import compiler
 from monkey_parser.parser import parse
-from monkey_object.object import Environment
-from monkey_object.macro_expansion import define_macro, expand_macro
+from monkey_vm import vm
 
 PROMPT = ">>"
 
@@ -16,18 +16,26 @@ def match_eof(code: str):
 
 
 def run():
-    env = Environment()
-    macro_env = Environment()
-    code = input(PROMPT)
-    while not match_eof(code):
+    while True:
+        code = input(PROMPT)
+        if match_eof(code):
+            break
         if code:
             program = parse(code)
-            define_macro(program, macro_env)
-            expanded = expand_macro(program, macro_env)
-            ret = evaluate(expanded, env)
-            if ret != NULL:
-                print(ret.inspect())
-        code = input(PROMPT)
+
+            comp = compiler.Compiler()
+            err = comp.compile(program)
+            if err is not None:
+                print(f"Woops! Compilation failed: \n {err} \n")
+                continue
+            machine = vm.VM.new(comp.bytecode())
+            err = machine.run()
+            if err is not None:
+                print(f"Woops! Execution bytecode failed: \n {err} \n")
+                continue
+            peek = machine.peek()
+            print(peek.inspect())
+
     print('Bye bye!')
 
 
