@@ -60,7 +60,12 @@ def test_integer_arithmetic():
     cases = [
         ("1+2", {1, 2}, [code.make(code.OpConstant, 0),
                         code.make(code.OpConstant, 1),
-                         code.make(code.OpAdd)])
+                         code.make(code.OpAdd),
+                         code.make(code.OpPop)]),
+        ("1;2", {1, 2}, [code.make(code.OpConstant, 0),
+                         code.make(code.OpPop),
+                         code.make(code.OpConstant, 1),
+                         code.make(code.OpPop)])
     ]
     err = run_compiler_tests(cases)
     if err is not None:

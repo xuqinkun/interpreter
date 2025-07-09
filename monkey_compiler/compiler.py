@@ -31,6 +31,7 @@ class Compiler:
             err = self.compile(node.expression)
             if err is not None:
                 return err
+            self.emit(code.OpPop)
         elif isinstance(node, ast.InfixExpression):
             err = self.compile(node.left)
             if err is not None:

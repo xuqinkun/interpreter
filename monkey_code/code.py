@@ -7,6 +7,7 @@ Opcode = int  # or use 'bytes' if you specifically want a single byte
 
 OpConstant = 1
 OpAdd = 2
+OpPop = 3
 
 
 @dataclass
@@ -47,6 +48,7 @@ class Instructions(bytes):
 definitions: Dict[Opcode, Definition] = {
     OpConstant: Definition(name="OpConstant", operand_widths=[2]),
     OpAdd: Definition(name="OpAdd", operand_widths=[]),
+    OpPop: Definition(name="OpPop", operand_widths=[]),
 }
 
 
