@@ -33,7 +33,7 @@ def run():
             if err is not None:
                 print(f"Woops! Execution bytecode failed: \n {err} \n")
                 continue
-            peek = machine.peek()
+            peek = machine.last_popped_stack_elem()
             print(peek.inspect())
 
     print('Bye bye!')

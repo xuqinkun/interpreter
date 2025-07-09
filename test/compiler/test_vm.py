@@ -26,8 +26,9 @@ def run_vm_test(cases: List[Tuple[str, int]]):
         err = vm.run()
         if err is not None:
             return f"vm error: {err}"
-        stack_elem = vm.peek()
+        stack_elem = vm.last_popped_stack_elem()
         test_expected_object(expected, stack_elem)
+
     return True
 
 

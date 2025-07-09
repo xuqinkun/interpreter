@@ -43,6 +43,8 @@ class VM:
                 right_val = right.value
                 result = left_val + right_val
                 self.push(object.Integer(result))
+            elif op == code.OpPop:
+                self.pop()
             ip += 1
         return None
 
@@ -57,3 +59,6 @@ class VM:
         o = self.stack[self.sp - 1]
         self.sp -= 1
         return o
+
+    def last_popped_stack_elem(self):
+        return self.stack[self.sp]
