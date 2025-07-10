@@ -58,14 +58,26 @@ def run_compiler_tests(cases: List[Tuple]):
 
 def test_integer_arithmetic():
     cases = [
-        ("1+2", {1, 2}, [code.make(code.OpConstant, 0),
+        ("1+2", (1, 2), [code.make(code.OpConstant, 0),
                         code.make(code.OpConstant, 1),
                          code.make(code.OpAdd),
                          code.make(code.OpPop)]),
-        ("1;2", {1, 2}, [code.make(code.OpConstant, 0),
+        ("1;2", (1, 2), [code.make(code.OpConstant, 0),
                          code.make(code.OpPop),
                          code.make(code.OpConstant, 1),
-                         code.make(code.OpPop)])
+                         code.make(code.OpPop)]),
+        ("1-2", (1, 2), [code.make(code.OpConstant, 0),
+                         code.make(code.OpConstant, 1),
+                         code.make(code.OpSub),
+                         code.make(code.OpPop)]),
+        ("1*2", (1, 2), [code.make(code.OpConstant, 0),
+                         code.make(code.OpConstant, 1),
+                         code.make(code.OpMul),
+                         code.make(code.OpPop)]),
+        ("2/1", (2, 1), [code.make(code.OpConstant, 0),
+                         code.make(code.OpConstant, 1),
+                         code.make(code.OpDiv),
+                         code.make(code.OpPop)]),
     ]
     err = run_compiler_tests(cases)
     if err is not None:

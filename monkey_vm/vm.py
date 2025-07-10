@@ -36,15 +36,27 @@ class VM:
                 err = self.push(self.constants[const_index])
                 if err is not None:
                     return err
-            elif op == code.OpAdd:
+            elif op in [code.OpAdd, code.OpSub, code.OpMul, code.OpDiv]:
                 right = self.pop()
                 left = self.pop()
                 left_val = left.value
                 right_val = right.value
-                result = left_val + right_val
-                self.push(object.Integer(result))
+                left_type = left.type()
+                right_type = right.type()
+                if left_type == object.INTEGER_OBJ and right_type == object.INTEGER_OBJ:
+                    if op == code.OpAdd:
+                        result = left_val + right_val
+                    elif op == code.OpSub:
+                        result = left_val - right_val
+                    elif op == code.OpMul:
+                        result = left_val * right_val
+                    else:
+                        result = left_val / right_val
+                    self.push(object.Integer(result))
             elif op == code.OpPop:
                 self.pop()
+            else:
+                return f"unknown operator: {op}"
             ip += 1
         return None
 
