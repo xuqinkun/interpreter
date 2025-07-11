@@ -68,10 +68,41 @@ class VM:
                 err = self.push(FALSE)
                 if err is not None:
                     return err
+            elif op in [code.OpEqual, code.OpNotEqual, code.OpGreaterThan]:
+                err = self.execute_comparison(op)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
+
+    def execute_integer_comparison(self, op: code.Opcode, left: object.Object, right: object.Object):
+        left_val = left.value
+        right_val = right.value
+        if op == code.OpEqual:
+            return self.push(native_bool_to_boolean_object(left_val == right_val))
+        elif op == code.OpNotEqual:
+            return self.push(native_bool_to_boolean_object(left_val != right_val))
+        elif op == code.OpGreaterThan:
+            return self.push(native_bool_to_boolean_object(left_val > right_val))
+        return f"unknown operator: {op}"
+
+
+    def execute_comparison(self, op: code.Opcode):
+        right = self.pop()
+        left = self.pop()
+        left_type = left.type()
+        right_type = right.type()
+        if left_type == object.INTEGER_OBJ and right_type == object.INTEGER_OBJ:
+            return self.execute_integer_comparison(op, left, right)
+        if op == code.OpEqual:
+            return self.push(native_bool_to_boolean_object(right == left))
+        elif op == code.OpNotEqual:
+            return self.push(native_bool_to_boolean_object(right != left))
+        else:
+            return f"unknown operator: {op} {left_type} {right_type}"
+
 
     def push(self, obj: object.Object):
         if self.sp >= STACK_SIZE:
@@ -87,3 +118,10 @@ class VM:
 
     def last_popped_stack_elem(self):
         return self.stack[self.sp]
+
+
+def native_bool_to_boolean_object(condition: bool):
+    if condition:
+        return TRUE
+    else:
+        return FALSE
