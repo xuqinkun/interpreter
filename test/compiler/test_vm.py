@@ -73,9 +73,29 @@ def test_infix_expressions():
 
 
 def test_boolean_expressions():
-    tests = [("true", True), ("false", False)]
+    tests = [("true", True),
+             ("false", False),
+             ("!true", False),
+             ("!false", True),
+             ("!5", False),
+             ("!!true", True),
+             ("!!false", False),
+             ("!!5", True),
+             ]
     if run_vm_test(tests) is True:
         print('Accepted')
 
+
+def test_integer_arithmetic():
+    tests = [("-5", -5),
+             ("-10", -10),
+             ("-50+100+-50", 0),
+             ("(5+10*2+15/3) * 2 + -10", 50)
+             ]
+    if run_vm_test(tests) is True:
+        print('Accepted')
+
+
 if __name__ == '__main__':
+    test_integer_arithmetic()
     test_boolean_expressions()

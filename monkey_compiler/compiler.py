@@ -37,6 +37,16 @@ class Compiler:
             if err is not None:
                 return err
             self.emit(code.OpPop)
+        elif isinstance(node, ast.PrefixExpression):
+            err = self.compile(node.right)
+            if err is not None:
+                return err
+            if node.operator == '!':
+                self.emit(code.OpBang)
+            elif node.operator == '-':
+                self.emit(code.OpMinus)
+            else:
+                return f"unknown operator {node.operator}"
         elif isinstance(node, ast.InfixExpression):
             err = self.compile(node.left)
             if err is not None:

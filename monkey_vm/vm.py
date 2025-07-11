@@ -68,10 +68,34 @@ class VM:
                 err = self.push(FALSE)
                 if err is not None:
                     return err
+            elif op == code.OpBang:
+                err = self.execute_bang_operator()
+                if err is not None:
+                    return err
+            elif op == code.OpMinus:
+                err = self.execute_minus_operator()
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
+
+    def execute_bang_operator(self):
+        operand = self.pop()
+        if operand == TRUE:
+            return self.push(FALSE)
+        elif operand == FALSE:
+            return self.push(TRUE)
+        else:
+            return self.push(FALSE)
+
+    def execute_minus_operator(self):
+        operand = self.pop()
+        if operand.type() != object.INTEGER_OBJ:
+            return f"unsupported type for negation: {operand.type()}"
+        value = operand.value
+        return self.push(object.Integer(-value))
 
     def push(self, obj: object.Object):
         if self.sp >= STACK_SIZE:

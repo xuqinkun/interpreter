@@ -13,6 +13,11 @@ OpMul = 5
 OpDiv = 6
 OpTrue = 7
 OpFalse = 8
+OpEqual = 9
+OpNotEqual = 10
+OpGreaterThan = 11
+OpMinus = 12
+OpBang = 13
 
 
 @dataclass
@@ -29,6 +34,11 @@ definitions: Dict[Opcode, Definition] = {
     OpDiv: Definition(name="OpDiv", operand_widths=[]),
     OpTrue: Definition(name="OpTrue", operand_widths=[]),
     OpFalse: Definition(name="OpFalse", operand_widths=[]),
+    OpEqual: Definition(name="OpEqual", operand_widths=[]),
+    OpNotEqual: Definition(name="OpNotEqual", operand_widths=[]),
+    OpGreaterThan: Definition(name="OpGreaterThan", operand_widths=[]),
+    OpMinus: Definition(name="OpMinus", operand_widths=[]),
+    OpBang: Definition(name="OpBang", operand_widths=[]),
 }
 
 @dataclass
