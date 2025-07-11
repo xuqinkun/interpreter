@@ -85,9 +85,21 @@ def test_integer_arithmetic():
     return True
 
 
+def test_boolean_expressions():
+    cases = [
+        ("true", (), (code.make(code.OpTrue), code.make(code.OpPop))),
+        ("false", (), (code.make(code.OpFalse), code.make(code.OpPop))),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
+
 if __name__ == '__main__':
     cases = [
-        test_integer_arithmetic
+        test_integer_arithmetic,
+        test_boolean_expressions
     ]
     test_util.run_cases(cases)
 

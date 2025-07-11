@@ -27,6 +27,11 @@ class Compiler:
                 err = self.compile(s)
                 if err is not None:
                     return err
+        elif isinstance(node, ast.Boolean):
+            if node.value:
+                self.emit(code.OpTrue)
+            else:
+                self.emit(code.OpFalse)
         elif isinstance(node, ast.ExpressionStatement):
             err = self.compile(node.expression)
             if err is not None:

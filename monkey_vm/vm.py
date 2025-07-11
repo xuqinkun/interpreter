@@ -5,6 +5,8 @@ from monkey_compiler import compiler
 from monkey_object import object
 
 STACK_SIZE=2048
+TRUE = object.Boolean(True)
+FALSE = object.Boolean(False)
 
 @dataclass
 class VM:
@@ -30,6 +32,7 @@ class VM:
         ip = 0
         while ip < len(self.instructions):
             op = code.Opcode(self.instructions[ip])
+            definition, ok = code.lookup(op)
             if op == code.OpConstant:
                 const_index = code.read_uint16(self.instructions[ip+1:])
                 ip += 2
@@ -52,11 +55,21 @@ class VM:
                         result = left_val * right_val
                     else:
                         result = left_val / right_val
-                    self.push(object.Integer(result))
+                    err = self.push(object.Integer(result))
+                    if err is not None:
+                        return err
             elif op == code.OpPop:
                 self.pop()
+            elif op == code.OpTrue:
+                err = self.push(TRUE)
+                if err is not None:
+                    return err
+            elif op == code.OpFalse:
+                err = self.push(FALSE)
+                if err is not None:
+                    return err
             else:
-                return f"unknown operator: {op}"
+                return f"unknown operator: {definition.name}"
             ip += 1
         return None
 

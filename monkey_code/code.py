@@ -11,7 +11,25 @@ OpPop = 3
 OpSub = 4
 OpMul = 5
 OpDiv = 6
+OpTrue = 7
+OpFalse = 8
 
+
+@dataclass
+class Definition:
+    name: str
+    operand_widths: List[int]
+
+definitions: Dict[Opcode, Definition] = {
+    OpConstant: Definition(name="OpConstant", operand_widths=[2]),
+    OpAdd: Definition(name="OpAdd", operand_widths=[]),
+    OpPop: Definition(name="OpPop", operand_widths=[]),
+    OpSub: Definition(name="OpSub", operand_widths=[]),
+    OpMul: Definition(name="OpMul", operand_widths=[]),
+    OpDiv: Definition(name="OpDiv", operand_widths=[]),
+    OpTrue: Definition(name="OpTrue", operand_widths=[]),
+    OpFalse: Definition(name="OpFalse", operand_widths=[]),
+}
 
 @dataclass
 class Definition:
@@ -46,16 +64,6 @@ class Instructions(bytes):
         elif operand_count == 1:
             return f"{define.name} {operands[0]}"
         return f"ERROR: unhandled operand_count for {define.name}\n"
-
-
-definitions: Dict[Opcode, Definition] = {
-    OpConstant: Definition(name="OpConstant", operand_widths=[2]),
-    OpAdd: Definition(name="OpAdd", operand_widths=[]),
-    OpPop: Definition(name="OpPop", operand_widths=[]),
-    OpSub: Definition(name="OpSub", operand_widths=[]),
-    OpMul: Definition(name="OpMul", operand_widths=[]),
-    OpDiv: Definition(name="OpDiv", operand_widths=[]),
-}
 
 
 def lookup(op: Opcode) -> Tuple[Optional[Definition], Optional[str]]:
