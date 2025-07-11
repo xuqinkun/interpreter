@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, cast
 from monkey_code import code
 from monkey_compiler import compiler
+
 from monkey_object import object
 
 STACK_SIZE=2048
@@ -76,10 +77,40 @@ class VM:
                 err = self.execute_minus_operator()
                 if err is not None:
                     return err
+            elif op in [code.OpEqual, code.OpNotEqual, code.OpGreaterThan]:
+                err = self.execute_comparison(op)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
+
+
+    def execute_comparison(self, op: code.Opcode):
+        right = self.pop()
+        left = self.pop()
+        if left.type() == object.INTEGER_OBJ and right.type() == object.INTEGER_OBJ:
+            return self.execute_integer_comparison(op, left, right)
+        if op == code.OpEqual:
+            return self.push(native_bool_to_boolean_object(right == left))
+        elif op == code.OpNotEqual:
+            return self.push(native_bool_to_boolean_object(right != left))
+        else:
+            return f"unknown error: {op} {left.type()} {right.type()}"
+
+
+    def execute_integer_comparison(self, op: code.Opcode, left: object.Object, right: object.Object):
+        left_val = left.value
+        right_val = right.value
+        if op == code.OpEqual:
+            return self.push(native_bool_to_boolean_object(left_val == right_val))
+        elif op == code.OpNotEqual:
+            return self.push(native_bool_to_boolean_object(left_val != right_val))
+        elif op == code.OpGreaterThan:
+            return self.push(native_bool_to_boolean_object(left_val > right_val))
+        else:
+            return f"unknown operator {op}"
 
     def execute_bang_operator(self):
         operand = self.pop()
@@ -111,3 +142,10 @@ class VM:
 
     def last_popped_stack_elem(self):
         return self.stack[self.sp]
+
+
+def native_bool_to_boolean_object(condition: bool):
+    if condition:
+        return TRUE
+    else:
+        return FALSE

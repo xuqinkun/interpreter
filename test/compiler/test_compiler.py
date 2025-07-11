@@ -95,6 +95,36 @@ def test_boolean_expressions():
         ("!true", (), (code.make(code.OpTrue),
                        code.make(code.OpBang),
                        code.make(code.OpPop))),
+        ("1>2", (1,2), (
+                       code.make(code.OpConstant, 0),
+                       code.make(code.OpConstant, 1),
+                       code.make(code.OpGreaterThan),
+                       code.make(code.OpPop))),
+        ("1<2", (2,1), (
+                       code.make(code.OpConstant, 0),
+                       code.make(code.OpConstant, 1),
+                       code.make(code.OpGreaterThan),
+                       code.make(code.OpPop))),
+        ("1==2", (1,2), (
+                       code.make(code.OpConstant, 0),
+                       code.make(code.OpConstant, 1),
+                       code.make(code.OpEqual),
+                       code.make(code.OpPop))),
+        ("1!=2", (1,2), (
+                       code.make(code.OpConstant, 0),
+                       code.make(code.OpConstant, 1),
+                       code.make(code.OpNotEqual),
+                       code.make(code.OpPop))),
+        ("true==false", (), (
+                       code.make(code.OpTrue),
+                       code.make(code.OpFalse),
+                       code.make(code.OpEqual),
+                       code.make(code.OpPop))),
+        ("true!=false", (), (
+                       code.make(code.OpTrue),
+                       code.make(code.OpFalse),
+                       code.make(code.OpNotEqual),
+                       code.make(code.OpPop))),
     ]
     err = run_compiler_tests(cases)
     if err is not None:

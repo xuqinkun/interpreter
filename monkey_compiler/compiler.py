@@ -48,6 +48,15 @@ class Compiler:
             else:
                 return f"unknown operator {node.operator}"
         elif isinstance(node, ast.InfixExpression):
+            if node.operator == '<':
+                err = self.compile(node.right)
+                if err is not None:
+                    return err
+                err = self.compile(node.left)
+                if err is not None:
+                    return err
+                self.emit(code.OpGreaterThan)
+                return None
             err = self.compile(node.left)
             if err is not None:
                 return err
@@ -62,6 +71,12 @@ class Compiler:
                 self.emit(code.OpMul)
             elif node.operator == '/':
                 self.emit(code.OpDiv)
+            elif node.operator == '>':
+                self.emit(code.OpGreaterThan)
+            elif node.operator == '==':
+                self.emit(code.OpEqual)
+            elif node.operator == '!=':
+                self.emit(code.OpNotEqual)
             else:
                 return f"unknown operator {node.operator}"
         elif isinstance(node, ast.IntegerLiteral):
