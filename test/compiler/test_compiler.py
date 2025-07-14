@@ -132,10 +132,26 @@ def test_boolean_expressions():
     return True
 
 
+def test_conditionals():
+    cases = [('if(true) {10};3333;', (10, 3333), (
+                       code.make(code.OpTrue),
+                       code.make(code.OpJumpNotTruthy, 7),
+                       code.make(code.OpConstant, 0),
+                       code.make(code.OpPop),
+                       code.make(code.OpConstant, 1),
+                       code.make(code.OpPop)
+    ))]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
+
 if __name__ == '__main__':
     cases = [
         test_integer_arithmetic,
-        test_boolean_expressions
+        test_boolean_expressions,
+        test_conditionals()
     ]
     test_util.run_cases(cases)
 

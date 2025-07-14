@@ -18,6 +18,8 @@ OpNotEqual = 10
 OpGreaterThan = 11
 OpMinus = 12
 OpBang = 13
+OpJump = 14
+OpJumpNotTruthy = 15
 
 
 @dataclass
@@ -39,6 +41,8 @@ definitions: Dict[Opcode, Definition] = {
     OpGreaterThan: Definition(name="OpGreaterThan", operand_widths=[]),
     OpMinus: Definition(name="OpMinus", operand_widths=[]),
     OpBang: Definition(name="OpBang", operand_widths=[]),
+    OpJump: Definition(name="OpJump", operand_widths=[]),
+    OpJumpNotTruthy: Definition(name="OpJumpNotTruthy", operand_widths=[]),
 }
 
 @dataclass
