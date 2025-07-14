@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, cast
 from monkey_code import code
 from monkey_compiler import compiler
+
 from monkey_object import object
 
 STACK_SIZE=2048
@@ -68,6 +69,14 @@ class VM:
                 err = self.push(FALSE)
                 if err is not None:
                     return err
+            elif op == code.OpBang:
+                err = self.execute_bang_operator()
+                if err is not None:
+                    return err
+            elif op == code.OpMinus:
+                err = self.execute_minus_operator()
+                if err is not None:
+                    return err
             elif op in [code.OpEqual, code.OpNotEqual, code.OpGreaterThan]:
                 err = self.execute_comparison(op)
                 if err is not None:
@@ -76,6 +85,20 @@ class VM:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
+
+
+    def execute_comparison(self, op: code.Opcode):
+        right = self.pop()
+        left = self.pop()
+        if left.type() == object.INTEGER_OBJ and right.type() == object.INTEGER_OBJ:
+            return self.execute_integer_comparison(op, left, right)
+        if op == code.OpEqual:
+            return self.push(native_bool_to_boolean_object(right == left))
+        elif op == code.OpNotEqual:
+            return self.push(native_bool_to_boolean_object(right != left))
+        else:
+            return f"unknown error: {op} {left.type()} {right.type()}"
+
 
     def execute_integer_comparison(self, op: code.Opcode, left: object.Object, right: object.Object):
         left_val = left.value
@@ -86,23 +109,24 @@ class VM:
             return self.push(native_bool_to_boolean_object(left_val != right_val))
         elif op == code.OpGreaterThan:
             return self.push(native_bool_to_boolean_object(left_val > right_val))
-        return f"unknown operator: {op}"
-
-
-    def execute_comparison(self, op: code.Opcode):
-        right = self.pop()
-        left = self.pop()
-        left_type = left.type()
-        right_type = right.type()
-        if left_type == object.INTEGER_OBJ and right_type == object.INTEGER_OBJ:
-            return self.execute_integer_comparison(op, left, right)
-        if op == code.OpEqual:
-            return self.push(native_bool_to_boolean_object(right == left))
-        elif op == code.OpNotEqual:
-            return self.push(native_bool_to_boolean_object(right != left))
         else:
-            return f"unknown operator: {op} {left_type} {right_type}"
+            return f"unknown operator {op}"
 
+    def execute_bang_operator(self):
+        operand = self.pop()
+        if operand == TRUE:
+            return self.push(FALSE)
+        elif operand == FALSE:
+            return self.push(TRUE)
+        else:
+            return self.push(FALSE)
+
+    def execute_minus_operator(self):
+        operand = self.pop()
+        if operand.type() != object.INTEGER_OBJ:
+            return f"unsupported type for negation: {operand.type()}"
+        value = operand.value
+        return self.push(object.Integer(-value))
 
     def push(self, obj: object.Object):
         if self.sp >= STACK_SIZE:
