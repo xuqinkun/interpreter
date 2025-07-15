@@ -13,13 +13,23 @@ class Bytecode:
 
 
 @dataclass()
+class EmittedInstruction:
+    op_code: code.Opcode = 0
+    pos: int = 0
+
+
+@dataclass()
 class Compiler:
     instructions: code.Instructions = b''
     constants: List[object.Object] = None
+    last_instruction: EmittedInstruction = None
+    previous_instruction: EmittedInstruction = None
 
     def __init__(self):
         self.instructions = code.Instructions()
         self.constants = []
+        self.last_instruction = EmittedInstruction()
+        self.previous_instruction = EmittedInstruction()
 
     def compile(self, node: ast.Node):
         if isinstance(node, ast.Program):
@@ -79,11 +89,35 @@ class Compiler:
                 self.emit(code.OpNotEqual)
             else:
                 return f"unknown operator {node.operator}"
+        elif isinstance(node, ast.IFExpression):
+            err = self.compile(node.condition)
+            if err is not None:
+                return err
+            jump_not_truthy_pos = self.emit(code.OpJumpNotTruthy, 9999)
+            err = self.compile(node.consequence)
+            if err is not None:
+                return err
+            if self.last_instruction_is_poo():
+                self.remove_last_pop()
+            after_consequence_pos = len(self.instructions)
+            self.change_operand(jump_not_truthy_pos, after_consequence_pos)
         elif isinstance(node, ast.IntegerLiteral):
             integer = object.Integer(node.value)
             pos = self.add_constant(integer)
             self.emit(code.OpConstant, pos)
+        elif isinstance(node, ast.BlockStatement):
+            for s in node.statements:
+                err = self.compile(s)
+                if err is not None:
+                    return err
         return None
+
+    def last_instruction_is_poo(self):
+        return self.last_instruction.op_code == code.OpPop
+
+    def remove_last_pop(self):
+        self.instructions = code.Instructions(self.instructions[:self.last_instruction.pos])
+        self.last_instruction = self.previous_instruction
 
     def add_constant(self, obj: object.Object):
         self.constants.append(obj)
@@ -94,12 +128,30 @@ class Compiler:
             operands = []
         ins = code.make(op, *operands)
         pos = self.add_instruction(ins)
+        self.set_last_instruction(op, pos)
         return pos
+
+    def replace_instructions(self, pos: int, new_instruction: bytes):
+
+        for i in range(len(new_instruction)):
+            self.instructions[pos+i] = new_instruction[i]
+
+    def set_last_instruction(self, op: code.Opcode, pos: int):
+        previous = self.last_instruction
+        last = EmittedInstruction(op_code=op, pos=pos)
+        self.previous_instruction = previous
+        self.last_instruction = last
 
     def add_instruction(self, ins: bytes) -> int:
         pos_new_instruction = len(self.instructions)
         self.instructions += ins
         return pos_new_instruction
+
+
+    def change_operand(self, op_pos: int, operand: int):
+        op = code.Opcode(self.instructions[op_pos])
+        new_instruction = code.make(op, operand)
+        self.replace_instructions(op_pos, new_instruction)
 
     def bytecode(self):
         return Bytecode(self.instructions, self.constants)

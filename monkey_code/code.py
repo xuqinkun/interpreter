@@ -41,8 +41,8 @@ definitions: Dict[Opcode, Definition] = {
     OpGreaterThan: Definition(name="OpGreaterThan", operand_widths=[]),
     OpMinus: Definition(name="OpMinus", operand_widths=[]),
     OpBang: Definition(name="OpBang", operand_widths=[]),
-    OpJump: Definition(name="OpJump", operand_widths=[]),
-    OpJumpNotTruthy: Definition(name="OpJumpNotTruthy", operand_widths=[]),
+    OpJump: Definition(name="OpJump", operand_widths=[2]),
+    OpJumpNotTruthy: Definition(name="OpJumpNotTruthy", operand_widths=[2]),
 }
 
 @dataclass
@@ -51,7 +51,7 @@ class Definition:
     operand_widths: List[int]
 
 
-class Instructions(bytes):
+class Instructions(bytearray):
 
     def __str__(self):
         out = StringIO()
