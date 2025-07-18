@@ -97,10 +97,22 @@ class Compiler:
             err = self.compile(node.consequence)
             if err is not None:
                 return err
-            if self.last_instruction_is_poo():
+            if self.last_instruction_is_pop():
                 self.remove_last_pop()
-            after_consequence_pos = len(self.instructions)
-            self.change_operand(jump_not_truthy_pos, after_consequence_pos)
+            if node.alternative is None:
+                after_consequence_pos = len(self.instructions)
+                self.change_operand(jump_not_truthy_pos, after_consequence_pos)
+            else:
+                jump_pos = self.emit(code.OpJump, 9999)
+                after_consequence_pos = len(self.instructions)
+                self.change_operand(jump_not_truthy_pos, after_consequence_pos)
+                err = self.compile(node.alternative)
+                if err is not None:
+                    return err
+                if self.last_instruction_is_pop():
+                    self.remove_last_pop()
+                after_consequence_pos = len(self.instructions)
+                self.change_operand(jump_pos, after_consequence_pos)
         elif isinstance(node, ast.IntegerLiteral):
             integer = object.Integer(node.value)
             pos = self.add_constant(integer)
@@ -112,7 +124,7 @@ class Compiler:
                     return err
         return None
 
-    def last_instruction_is_poo(self):
+    def last_instruction_is_pop(self):
         return self.last_instruction.op_code == code.OpPop
 
     def remove_last_pop(self):
@@ -131,7 +143,7 @@ class Compiler:
         self.set_last_instruction(op, pos)
         return pos
 
-    def replace_instructions(self, pos: int, new_instruction: bytes):
+    def replace_instructions(self, pos: int, new_instruction: code.Instructions):
 
         for i in range(len(new_instruction)):
             self.instructions[pos+i] = new_instruction[i]
@@ -142,7 +154,7 @@ class Compiler:
         self.previous_instruction = previous
         self.last_instruction = last
 
-    def add_instruction(self, ins: bytes) -> int:
+    def add_instruction(self, ins: code.Instructions) -> int:
         pos_new_instruction = len(self.instructions)
         self.instructions += ins
         return pos_new_instruction
