@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from monkey_vm import vm
 from monkey_vm.vm import VM
 from util import test_util
 from monkey_object import object
@@ -51,6 +52,9 @@ def test_expected_object(expected, actual: object.Object):
         err = test_boolean_object(expected, actual)
         if err is not None:
             print(f"test_boolean_object failed: {err}")
+    elif exp_type == object.Null:
+        if actual != vm.NULL:
+            print(f"object is not null: {type(actual)} {actual}")
     return f"type not supported: {exp_type}"
 
 
@@ -98,6 +102,7 @@ def test_boolean_expressions():
              ("(1 < 2) == false", False),
              ("(1 > 2) == true", False),
              ("(1 > 2) == false", True),
+             ("!(if (false) { 5; })", True)
              ]
     if run_vm_test(tests) is True:
         print('Accepted')
@@ -121,11 +126,14 @@ def test_conditionals():
         ("if (1 < 2) { 10 }", 10),
         ("if (1 < 2) { 10 } else { 20 }", 10),
         ("if (1 > 2) { 10 } else { 20 }", 20),
+        ("if (1 > 2) { 10 }", vm.NULL),
+        ("if (false) { 10 }", vm.NULL),
+        ("if ((if (false) { 10 })) { 10 } else { 20 }", 20),
     ]
     if run_vm_test(tests) is True:
         print('test_conditionals Accepted')
 
 if __name__ == '__main__':
     # test_integer_arithmetic()
-    # test_boolean_expressions()
+    test_boolean_expressions()
     test_conditionals()

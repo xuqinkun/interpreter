@@ -34,7 +34,8 @@ def run():
                 print(f"Woops! Execution bytecode failed: \n {err} \n")
                 continue
             peek = machine.last_popped_stack_elem()
-            print(peek.inspect())
+            if peek is not None:
+                print(peek.inspect())
 
     print('Bye bye!')
 

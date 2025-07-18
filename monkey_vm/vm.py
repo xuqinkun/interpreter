@@ -8,6 +8,7 @@ from monkey_object import object
 STACK_SIZE=2048
 TRUE = object.Boolean(True)
 FALSE = object.Boolean(False)
+NULL = object.Null()
 
 @dataclass
 class VM:
@@ -90,6 +91,10 @@ class VM:
                 condition = self.pop()
                 if not is_truthy(condition):
                     ip = pos - 1
+            elif op == code.OpNull:
+                err = self.push(NULL)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
@@ -127,6 +132,8 @@ class VM:
             return self.push(FALSE)
         elif operand == FALSE:
             return self.push(TRUE)
+        elif operand == NULL:
+            return self.push(TRUE)
         else:
             return self.push(FALSE)
 
@@ -163,4 +170,6 @@ def native_bool_to_boolean_object(condition: bool):
 def is_truthy(obj: object.Object):
     if isinstance(obj, object.Boolean):
         return obj.value
+    elif isinstance(obj, object.Null):
+        return False
     return True

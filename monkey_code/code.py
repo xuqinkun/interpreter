@@ -20,6 +20,7 @@ OpMinus = 12
 OpBang = 13
 OpJump = 14
 OpJumpNotTruthy = 15
+OpNull = 16
 
 
 @dataclass
@@ -43,6 +44,7 @@ definitions: Dict[Opcode, Definition] = {
     OpBang: Definition(name="OpBang", operand_widths=[]),
     OpJump: Definition(name="OpJump", operand_widths=[2]),
     OpJumpNotTruthy: Definition(name="OpJumpNotTruthy", operand_widths=[2]),
+    OpNull: Definition(name="OpNull", operand_widths=[]),
 }
 
 @dataclass

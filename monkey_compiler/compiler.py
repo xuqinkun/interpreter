@@ -99,20 +99,21 @@ class Compiler:
                 return err
             if self.last_instruction_is_pop():
                 self.remove_last_pop()
+
+            jump_pos = self.emit(code.OpJump, 9999)
+
+            after_consequence_pos = len(self.instructions)
+            self.change_operand(jump_not_truthy_pos, after_consequence_pos)
             if node.alternative is None:
-                after_consequence_pos = len(self.instructions)
-                self.change_operand(jump_not_truthy_pos, after_consequence_pos)
+                self.emit(code.OpNull)
             else:
-                jump_pos = self.emit(code.OpJump, 9999)
-                after_consequence_pos = len(self.instructions)
-                self.change_operand(jump_not_truthy_pos, after_consequence_pos)
                 err = self.compile(node.alternative)
                 if err is not None:
                     return err
                 if self.last_instruction_is_pop():
                     self.remove_last_pop()
-                after_consequence_pos = len(self.instructions)
-                self.change_operand(jump_pos, after_consequence_pos)
+            after_consequence_pos = len(self.instructions)
+            self.change_operand(jump_pos, after_consequence_pos)
         elif isinstance(node, ast.IntegerLiteral):
             integer = object.Integer(node.value)
             pos = self.add_constant(integer)

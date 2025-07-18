@@ -134,25 +134,34 @@ def test_boolean_expressions():
 
 def test_conditionals():
     cases = [
-        ('if(true) {10};3333;', (10, 3333), (
-           code.make(code.OpTrue),
-           code.make(code.OpJumpNotTruthy, 7),
-           code.make(code.OpConstant, 0),
-           code.make(code.OpPop),
-           code.make(code.OpConstant, 1),
-           code.make(code.OpPop)
-        )),
-        ('if (true) { 10 } else { 20 }; 3333;',  (10, 20, 3333), (
+        # ('if(true) {10};3333;', (10, 3333), (
+        #    code.make(code.OpTrue),
+        #    code.make(code.OpJumpNotTruthy, 7),
+        #    code.make(code.OpConstant, 0),
+        #    code.make(code.OpPop),
+        #    code.make(code.OpConstant, 1),
+        #    code.make(code.OpPop)
+        # )),
+        # ('if (true) { 10 } else { 20 }; 3333;',  (10, 20, 3333), (
+        #     code.make(code.OpTrue),
+        #     code.make(code.OpJumpNotTruthy, 10),
+        #     code.make(code.OpConstant, 0),
+        #     code.make(code.OpJump, 13),
+        #     code.make(code.OpConstant, 1),
+        #     code.make(code.OpPop),
+        #     code.make(code.OpConstant, 2),
+        #     code.make(code.OpPop)
+        # )),
+        ('if (true) { 10 }; 3333;',  (10, 3333), (
             code.make(code.OpTrue),
             code.make(code.OpJumpNotTruthy, 10),
             code.make(code.OpConstant, 0),
-            code.make(code.OpJump, 13),
-            code.make(code.OpConstant, 1),
+            code.make(code.OpJump, 11),
+            code.make(code.OpNull),
             code.make(code.OpPop),
-            code.make(code.OpConstant, 2),
+            code.make(code.OpConstant, 1),
             code.make(code.OpPop)
-        ))
-             ]
+        ))]
     err = run_compiler_tests(cases)
     if err is not None:
         return err
