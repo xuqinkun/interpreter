@@ -81,6 +81,15 @@ class VM:
                 err = self.execute_comparison(op)
                 if err is not None:
                     return err
+            elif op == code.OpJump:
+                pos = code.read_uint16(self.instructions[ip+1:])
+                ip = pos - 1
+            elif op == code.OpJumpNotTruthy:
+                pos = code.read_uint16(self.instructions[ip + 1:])
+                ip += 2
+                condition = self.pop()
+                if not is_truthy(condition):
+                    ip = pos - 1
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
@@ -149,3 +158,9 @@ def native_bool_to_boolean_object(condition: bool):
         return TRUE
     else:
         return FALSE
+
+
+def is_truthy(obj: object.Object):
+    if isinstance(obj, object.Boolean):
+        return obj.value
+    return True

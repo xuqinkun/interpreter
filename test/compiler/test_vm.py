@@ -112,7 +112,20 @@ def test_integer_arithmetic():
     if run_vm_test(tests) is True:
         print('Accepted')
 
+def test_conditionals():
+    tests = [
+        ("if (true) { 10 }", 10),
+        ("if (true) { 10 } else { 20 }", 10),
+        ("if (false) { 10 } else { 20 } ", 20),
+        ("if (1) { 10 }", 10),
+        ("if (1 < 2) { 10 }", 10),
+        ("if (1 < 2) { 10 } else { 20 }", 10),
+        ("if (1 > 2) { 10 } else { 20 }", 20),
+    ]
+    if run_vm_test(tests) is True:
+        print('test_conditionals Accepted')
 
 if __name__ == '__main__':
-    test_integer_arithmetic()
-    test_boolean_expressions()
+    # test_integer_arithmetic()
+    # test_boolean_expressions()
+    test_conditionals()
