@@ -21,6 +21,8 @@ OpBang = 13
 OpJump = 14
 OpJumpNotTruthy = 15
 OpNull = 16
+OpGetGlobal = 17
+OpSetGlobal = 18
 
 
 @dataclass
@@ -45,6 +47,8 @@ definitions: Dict[Opcode, Definition] = {
     OpJump: Definition(name="OpJump", operand_widths=[2]),
     OpJumpNotTruthy: Definition(name="OpJumpNotTruthy", operand_widths=[2]),
     OpNull: Definition(name="OpNull", operand_widths=[]),
+    OpGetGlobal: Definition(name="OpGetGlobal", operand_widths=[2]),
+    OpSetGlobal: Definition(name="OpSetGlobal", operand_widths=[2]),
 }
 
 @dataclass

@@ -123,6 +123,10 @@ class Compiler:
                 err = self.compile(s)
                 if err is not None:
                     return err
+        elif isinstance(node, ast.LetStatement):
+            err = self.compile(node.value)
+            if err is not None:
+                return err
         return None
 
     def last_instruction_is_pop(self):

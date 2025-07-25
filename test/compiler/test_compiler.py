@@ -167,12 +167,43 @@ def test_conditionals():
         return err
     return True
 
+def test_global_let_statements():
+    cases = [("let one = 1; let two = 2;", (1,2),
+              (code.make(code.OpConstant, 0),
+               code.make(code.OpSetGlobal, 0),
+               code.make(code.OpConstant, 1),
+               code.make(code.OpSetGlobal, 1)
+               )
+              ),
+             ("let one = 1; one;", (1,),
+              (code.make(code.OpConstant, 0),
+               code.make(code.OpSetGlobal, 0),
+               code.make(code.OpGetGlobal, 0),
+               code.make(code.OpPop)
+               )
+              ),
+             ("let one = 1; let two = one; two;", (1,),
+              (code.make(code.OpConstant, 0),
+               code.make(code.OpSetGlobal, 0),
+               code.make(code.OpGetGlobal, 0),
+               code.make(code.OpSetGlobal, 1),
+               code.make(code.OpGetGlobal, 1),
+               code.make(code.OpPop)
+               )
+              )
+             ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 
 if __name__ == '__main__':
     tests = [
         test_integer_arithmetic,
         test_boolean_expressions,
-        test_conditionals
+        test_conditionals,
+        test_global_let_statements
     ]
     test_util.run_cases(tests)
 
