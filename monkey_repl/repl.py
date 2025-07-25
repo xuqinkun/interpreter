@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
+from typing import List, cast
 
+from monkey_object import object
 from monkey_compiler import compiler
+from monkey_compiler.symbol_table import SymbolTable
 from monkey_parser.parser import parse
 from monkey_vm import vm
+from monkey_vm.vm import GLOBAL_SIZE
 
 PROMPT = ">>"
 
@@ -16,6 +20,9 @@ def match_eof(code: str):
 
 
 def run():
+    constants = []
+    globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
+    symbol_table = SymbolTable()
     while True:
         code = input(PROMPT)
         if match_eof(code):
@@ -23,12 +30,14 @@ def run():
         if code:
             program = parse(code)
 
-            comp = compiler.Compiler()
+            comp = compiler.Compiler.new_with_state(symbol_table, constants)
             err = comp.compile(program)
             if err is not None:
                 print(f"Woops! Compilation failed: \n {err} \n")
                 continue
-            machine = vm.VM.new(comp.bytecode())
+            code = comp.bytecode()
+            constants = code.constants
+            machine = vm.VM.new_with_global_state(code, globals)
             err = machine.run()
             if err is not None:
                 print(f"Woops! Execution bytecode failed: \n {err} \n")

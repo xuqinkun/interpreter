@@ -34,6 +34,13 @@ class Compiler:
         self.previous_instruction = EmittedInstruction()
         self.symbol_table = SymbolTable()
 
+    @staticmethod
+    def new_with_state(s: SymbolTable, constants: List[object.Object]):
+        compiler = Compiler()
+        compiler.symbol_table = s
+        compiler.constants = constants
+        return compiler
+
     def compile(self, node: ast.Node):
         if isinstance(node, ast.Program):
             for s in node.statements:

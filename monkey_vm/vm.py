@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from typing import List, cast
 from monkey_code import code
 from monkey_compiler import compiler
-
 from monkey_object import object
 
-STACK_SIZE=2048
+STACK_SIZE = 2048
+GLOBAL_SIZE = 65536
 TRUE = object.Boolean(True)
 FALSE = object.Boolean(False)
 NULL = object.Null()
+
 
 @dataclass
 class VM:
@@ -16,14 +17,23 @@ class VM:
     instructions: code.Instructions
     stack: List[object.Object]
     sp: int
+    globals: List[object.Object]
 
     @staticmethod
     def new(bytecode: compiler.Bytecode):
         stack = cast(List[object.Object], [None] * STACK_SIZE)
+        globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
         return VM(instructions=bytecode.instructions,
                   constants=bytecode.constants,
                   stack=stack,
-                  sp=0)
+                  sp=0,
+                  globals=globals)
+
+    @staticmethod
+    def new_with_global_state(bytecode: compiler.Bytecode, s: List[object.Object]):
+        vm = VM.new(bytecode)
+        vm.globals = s
+        return vm
 
     def peek(self):
         if self.sp == 0:
@@ -36,7 +46,7 @@ class VM:
             op = code.Opcode(self.instructions[ip])
             definition, ok = code.lookup(op)
             if op == code.OpConstant:
-                const_index = code.read_uint16(self.instructions[ip+1:])
+                const_index = code.read_uint16(self.instructions[ip + 1:])
                 ip += 2
                 err = self.push(self.constants[const_index])
                 if err is not None:
@@ -83,7 +93,7 @@ class VM:
                 if err is not None:
                     return err
             elif op == code.OpJump:
-                pos = code.read_uint16(self.instructions[ip+1:])
+                pos = code.read_uint16(self.instructions[ip + 1:])
                 ip = pos - 1
             elif op == code.OpJumpNotTruthy:
                 pos = code.read_uint16(self.instructions[ip + 1:])
@@ -95,11 +105,20 @@ class VM:
                 err = self.push(NULL)
                 if err is not None:
                     return err
+            elif op == code.OpSetGlobal:
+                global_index = code.read_uint16(self.instructions[ip + 1:])
+                ip += 2
+                self.globals[global_index] = self.pop()
+            elif op == code.OpGetGlobal:
+                global_index = code.read_uint16(self.instructions[ip + 1: ])
+                ip += 2
+                err = self.push(self.globals[global_index])
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
-
 
     def execute_comparison(self, op: code.Opcode):
         right = self.pop()
@@ -112,7 +131,6 @@ class VM:
             return self.push(native_bool_to_boolean_object(right != left))
         else:
             return f"unknown error: {op} {left.type()} {right.type()}"
-
 
     def execute_integer_comparison(self, op: code.Opcode, left: object.Object, right: object.Object):
         left_val = left.value

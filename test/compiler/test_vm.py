@@ -133,7 +133,17 @@ def test_conditionals():
     if run_vm_test(tests) is True:
         print('test_conditionals Accepted')
 
+def test_global_let_statements():
+    tests =[
+        ("let one = 1; one", 1),
+        ("let one = 1; let two = 2; one + two", 3),
+        ("let one = 1; let two = one + one; one + two", 3)]
+    if run_vm_test(tests) is True:
+        print('test_global_let_statements Accepted')
+
+
 if __name__ == '__main__':
     # test_integer_arithmetic()
     test_boolean_expressions()
     test_conditionals()
+    test_global_let_statements()

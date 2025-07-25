@@ -25,4 +25,4 @@ class SymbolTable:
         return symbol
 
     def resolve(self, name):
-        return self.store[name], name in self.store
+        return self.store.get(name, None), name in self.store
