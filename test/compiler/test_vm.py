@@ -26,7 +26,7 @@ def test_boolean_object(expected: bool, actual: object.Object):
     return None
 
 
-def run_vm_test(cases: List[Tuple[str, Union[int, str]]]):
+def run_vm_test(cases: List[Tuple[str, Union[int, str, List]]]):
     for code, expected in cases:
         program = parser.parse(code)
         comp = Compiler()
@@ -60,6 +60,16 @@ def test_expected_object(expected, actual: object.Object):
     elif exp_type == object.Null:
         if actual != vm.NULL:
             print(f"object is not null: {type(actual)} {actual}")
+    elif exp_type == object.Array:
+        array, ok = test_util.check_type(object.Array, actual)
+        if not ok:
+            return f"object is not array : {type(actual)} {actual}"
+        if len(array.elements) != len(expected):
+            return f"wrong num of elements. want={len(expected)} got={len(array.elements)}"
+        for i, expected_elem in enumerate(expected):
+            err = test_integer_object(expected_elem, array.elements[i])
+            if err is not None:
+                print(f"test_integer_object failed: {err}")
     return f"type not supported: {exp_type}"
 
 
@@ -165,9 +175,20 @@ def test_string_expressions():
         print('test_global_let_statements Accepted')
 
 
+def test_array_expressions():
+    cases = [
+        ('[]', []),
+        ('[1,2,3]', [1,2,3]),
+        ('[1+2,3*4,5+6]', [3,12,11]),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_array_expressions Accepted')
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
     test_conditionals()
     test_global_let_statements()
     test_string_expressions()
+    test_array_expressions()

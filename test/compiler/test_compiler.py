@@ -213,15 +213,6 @@ def test_string_expressions():
     return True
 
 
-def test_constants(expected: List, actual: List[object.Object]):
-    for i, constant in enumerate(expected):
-        if type(constant) == str:
-            err = test_string_object(constant, actual[i])
-            if err is not None:
-                return f"constant {i}: test_string_object failed: {err}"
-    return None
-
-
 def test_string_object(expected: str, actual: object.Object):
     result, ok = test_util.check_type(object.String, actual)
     if not ok:
@@ -230,13 +221,41 @@ def test_string_object(expected: str, actual: object.Object):
         return f"object has wrong value. got={result.value}, want={expected}"
     return None
 
+
+def test_array_literals():
+    cases = [
+        ("[]", (), (code.make(code.OpArray, 0), code.make(code.OpPop))),
+        ("[1,2,3]", (1,2,3), (code.make(code.OpConstant, 0),
+                              code.make(code.OpConstant, 1),
+                              code.make(code.OpConstant, 2),
+                              code.make(code.OpArray, 3),
+                              code.make(code.OpPop))),
+        ("[1+2,3-4,5*6]", (1,2,3,4,5,6),
+                            (code.make(code.OpConstant, 0),
+                              code.make(code.OpConstant, 1),
+                              code.make(code.OpAdd),
+                              code.make(code.OpConstant, 2),
+                              code.make(code.OpConstant, 3),
+                              code.make(code.OpSub),
+                              code.make(code.OpConstant, 4),
+                              code.make(code.OpConstant, 5),
+                              code.make(code.OpMul),
+                              code.make(code.OpArray, 3),
+                              code.make(code.OpPop))),
+             ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 if __name__ == '__main__':
     tests = [
         test_integer_arithmetic,
         test_boolean_expressions,
         test_conditionals,
         test_global_let_statements,
-        test_string_expressions
+        test_string_expressions,
+        test_array_literals
     ]
     test_util.run_cases(tests)
 

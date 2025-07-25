@@ -100,10 +100,20 @@ class VM:
                 err = self.push(self.globals[global_index])
                 if err is not None:
                     return err
+            elif op == code.OpArray:
+                num_elements = int(code.read_uint16(self.instructions[ip+1:]))
+                ip += 2
+                array = self.build_array(self.sp - num_elements, self.sp)
+                err = self.push(array)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
+
+    def build_array(self, start_idx, end_idx):
+        return object.Array(self.stack[start_idx: end_idx])
 
     def execute_binary_operation(self, op: code.Opcode):
         right = self.pop()
