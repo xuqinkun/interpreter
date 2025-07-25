@@ -144,6 +144,9 @@ class Compiler:
             if not ok:
                 return f"undefined variable: {node.value}"
             self.emit(code.OpGetGlobal, symbol.index)
+        elif isinstance(node, ast.StringLiteral):
+            s = object.String(node.value)
+            self.emit(code.OpConstant, self.add_constant(s))
         return None
 
     def last_instruction_is_pop(self):
@@ -166,7 +169,6 @@ class Compiler:
         return pos
 
     def replace_instructions(self, pos: int, new_instruction: code.Instructions):
-
         for i in range(len(new_instruction)):
             self.instructions[pos+i] = new_instruction[i]
 

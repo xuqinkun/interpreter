@@ -198,12 +198,45 @@ def test_global_let_statements():
     return True
 
 
+def test_string_expressions():
+    cases = [
+        ('"monkey"', ("monkey",), (code.make(code.OpConstant, 0), code.make(code.OpPop))),
+        ('"mon"+"key"', ("mon", "key"), (code.make(code.OpConstant, 0),
+                                         code.make(code.OpConstant, 1),
+                                         code.make(code.OpAdd),
+                                         code.make(code.OpPop)
+                                         )),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
+
+def test_constants(expected: List, actual: List[object.Object]):
+    for i, constant in enumerate(expected):
+        if type(constant) == str:
+            err = test_string_object(constant, actual[i])
+            if err is not None:
+                return f"constant {i}: test_string_object failed: {err}"
+    return None
+
+
+def test_string_object(expected: str, actual: object.Object):
+    result, ok = test_util.check_type(object.String, actual)
+    if not ok:
+        return f"object is not String. got={type(actual)} {actual}"
+    if result.value != expected:
+        return f"object has wrong value. got={result.value}, want={expected}"
+    return None
+
 if __name__ == '__main__':
     tests = [
         test_integer_arithmetic,
         test_boolean_expressions,
         test_conditionals,
-        test_global_let_statements
+        test_global_let_statements,
+        test_string_expressions
     ]
     test_util.run_cases(tests)
 

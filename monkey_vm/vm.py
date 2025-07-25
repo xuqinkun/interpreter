@@ -52,24 +52,9 @@ class VM:
                 if err is not None:
                     return err
             elif op in [code.OpAdd, code.OpSub, code.OpMul, code.OpDiv]:
-                right = self.pop()
-                left = self.pop()
-                left_val = left.value
-                right_val = right.value
-                left_type = left.type()
-                right_type = right.type()
-                if left_type == object.INTEGER_OBJ and right_type == object.INTEGER_OBJ:
-                    if op == code.OpAdd:
-                        result = left_val + right_val
-                    elif op == code.OpSub:
-                        result = left_val - right_val
-                    elif op == code.OpMul:
-                        result = left_val * right_val
-                    else:
-                        result = left_val / right_val
-                    err = self.push(object.Integer(result))
-                    if err is not None:
-                        return err
+                err = self.execute_binary_operation(op)
+                if err is not None:
+                    return err
             elif op == code.OpPop:
                 self.pop()
             elif op == code.OpTrue:
@@ -119,6 +104,37 @@ class VM:
                 return f"unknown operator: {definition.name}"
             ip += 1
         return None
+
+    def execute_binary_operation(self, op: code.Opcode):
+        right = self.pop()
+        left = self.pop()
+        left_type = left.type()
+        right_type = right.type()
+        if left_type == object.INTEGER_OBJ and right_type == object.INTEGER_OBJ:
+            return self.execute_binary_integer_operation(op, left, right)
+        elif left_type == object.STRING_OBJ and right_type == object.STRING_OBJ:
+            return self.execute_binary_string_operation(op, left, right)
+        return f"unsupported types for binary operation: {left_type} {right_type}"
+
+    def execute_binary_string_operation(self, op: code.Opcode, left: object.Object, right: object.Object):
+        if op != code.OpAdd:
+            return f"unknown string operator: {op}"
+        left_value = left.value
+        right_value = right.value
+        return self.push(object.String(left_value + right_value))
+
+    def execute_binary_integer_operation(self, op: code.Opcode, left: object.Object, right: object.Object):
+        left_value = left.value
+        right_val = right.value
+        if op == code.OpAdd:
+            result = left_value + right_val
+        elif op == code.OpSub:
+            result = left_value - right_val
+        elif op == code.OpMul:
+            result = left_value * right_val
+        else:
+            result = left_value / right_val
+        return self.push(object.Integer(result))
 
     def execute_comparison(self, op: code.Opcode):
         right = self.pop()

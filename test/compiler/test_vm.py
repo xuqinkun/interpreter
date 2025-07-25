@@ -1,10 +1,11 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
+
+from monkey_compiler.compiler import Compiler
+from monkey_object import object
+from monkey_parser import parser
 from monkey_vm import vm
 from monkey_vm.vm import VM
 from util import test_util
-from monkey_object import object
-from monkey_parser import parser
-from monkey_compiler.compiler import Compiler
 
 
 def test_integer_object(expected: int, actual: object.Object):
@@ -25,7 +26,7 @@ def test_boolean_object(expected: bool, actual: object.Object):
     return None
 
 
-def run_vm_test(cases: List[Tuple[str, int]]):
+def run_vm_test(cases: List[Tuple[str, Union[int, str]]]):
     for code, expected in cases:
         program = parser.parse(code)
         comp = Compiler()
@@ -52,11 +53,23 @@ def test_expected_object(expected, actual: object.Object):
         err = test_boolean_object(expected, actual)
         if err is not None:
             print(f"test_boolean_object failed: {err}")
+    elif exp_type == str:
+        err = test_string_object(expected, actual)
+        if err is not None:
+            print(f"test_string_object failed: {err}")
     elif exp_type == object.Null:
         if actual != vm.NULL:
             print(f"object is not null: {type(actual)} {actual}")
     return f"type not supported: {exp_type}"
 
+
+def test_string_object(expected:str, actual: object.Object):
+    result, ok = test_util.check_type(object.String, actual)
+    if not ok:
+        return f"object is not String. got={type(actual)} ({actual})"
+    if result.value != expected:
+        return f"object has wrong value. got={result.value} want={expected}"
+    return None
 
 def test_infix_expressions():
     tests = [("1", 1),
@@ -105,7 +118,7 @@ def test_boolean_expressions():
              ("!(if (false) { 5; })", True)
              ]
     if run_vm_test(tests) is True:
-        print('Accepted')
+        print('test_boolean_expressions Accepted')
 
 
 def test_integer_arithmetic():
@@ -115,7 +128,7 @@ def test_integer_arithmetic():
              ("(5+10*2+15/3) * 2 + -10", 50)
              ]
     if run_vm_test(tests) is True:
-        print('Accepted')
+        print('test_integer_arithmetic Accepted')
 
 def test_conditionals():
     tests = [
@@ -142,8 +155,19 @@ def test_global_let_statements():
         print('test_global_let_statements Accepted')
 
 
+def test_string_expressions():
+    cases = [
+        ('"monkey"', "monkey"),
+        ('"mon" + "key"', "monkey"),
+        ('"mon" + "key" + "banana"', "monkeybanana"),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_global_let_statements Accepted')
+
+
 if __name__ == '__main__':
-    # test_integer_arithmetic()
+    test_integer_arithmetic()
     test_boolean_expressions()
     test_conditionals()
     test_global_let_statements()
+    test_string_expressions()
