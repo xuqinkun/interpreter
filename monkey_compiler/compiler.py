@@ -3,6 +3,7 @@ from typing import List
 
 from monkey_ast import ast
 from monkey_code import code
+from monkey_compiler.symbol_table import SymbolTable
 from monkey_object import object
 
 
@@ -24,12 +25,14 @@ class Compiler:
     constants: List[object.Object] = None
     last_instruction: EmittedInstruction = None
     previous_instruction: EmittedInstruction = None
+    symbol_table: SymbolTable = None
 
     def __init__(self):
         self.instructions = code.Instructions()
         self.constants = []
         self.last_instruction = EmittedInstruction()
         self.previous_instruction = EmittedInstruction()
+        self.symbol_table = SymbolTable()
 
     def compile(self, node: ast.Node):
         if isinstance(node, ast.Program):
@@ -127,6 +130,13 @@ class Compiler:
             err = self.compile(node.value)
             if err is not None:
                 return err
+            symbol = self.symbol_table.define(node.name.value)
+            self.emit(code.OpSetGlobal, symbol.index)
+        elif isinstance(node, ast.Identifier):
+            symbol, ok = self.symbol_table.resolve(node.value)
+            if not ok:
+                return f"undefined variable: {node.value}"
+            self.emit(code.OpGetGlobal, symbol.index)
         return None
 
     def last_instruction_is_pop(self):
