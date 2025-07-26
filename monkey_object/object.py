@@ -49,8 +49,14 @@ class Object:
         pass
 
 
+class Hashable(Object):
+
+    @abstractmethod
+    def hash_key(self) -> HashKey:
+        pass
+
 @dataclass
-class Integer(Object):
+class Integer(Hashable):
     value: int
 
     def type(self) -> str:
@@ -71,7 +77,7 @@ class Integer(Object):
 
 
 @dataclass
-class Boolean(Object):
+class Boolean(Hashable):
     value: bool
 
     def type(self) -> str:
@@ -177,7 +183,7 @@ class Function(Object):
 
 
 @dataclass
-class String(Object):
+class String(Hashable):
     value: str = None
 
     def type(self) -> str:

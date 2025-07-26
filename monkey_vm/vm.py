@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import List, cast
+
+from util import test_util
 from monkey_code import code
 from monkey_compiler import compiler
 from monkey_object import object
@@ -107,6 +109,16 @@ class VM:
                 err = self.push(array)
                 if err is not None:
                     return err
+            elif op == code.OpHash:
+                num_elements = int(code.read_uint16(self.instructions[ip+1:]))
+                ip += 2
+                hash_obj, err = self.build_hash(self.sp - num_elements, self.sp)
+                if err is not None:
+                    return err
+                self.sp = self.sp - num_elements
+                err = self.push(hash_obj)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
             ip += 1
@@ -114,6 +126,17 @@ class VM:
 
     def build_array(self, start_idx, end_idx):
         return object.Array(self.stack[start_idx: end_idx])
+
+    def build_hash(self, start_idx, end_idx):
+        hashed_pairs = {}
+        for i in range(start_idx, end_idx, 2):
+            key = self.stack[i]
+            value = self.stack[i+1]
+            pair = object.HashPair(key=key, value=value)
+            if not isinstance(key, object.Hashable):
+                return f"unhashable key {key.type()}"
+            hashed_pairs[key.hash_key()] = pair
+        return object.Hash(pairs=hashed_pairs), None
 
     def execute_binary_operation(self, op: code.Opcode):
         right = self.pop()

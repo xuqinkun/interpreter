@@ -60,3 +60,11 @@ def get_eval(code: str):
     program = p.parse_program()
     env = object.Environment()
     return evaluate(program, env)
+
+
+def is_hashable(obj):
+    try:
+        hash(obj)
+        return True
+    except TypeError:
+        return False

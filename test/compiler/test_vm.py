@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 from monkey_compiler.compiler import Compiler
 from monkey_object import object
@@ -26,7 +26,7 @@ def test_boolean_object(expected: bool, actual: object.Object):
     return None
 
 
-def run_vm_test(cases: List[Tuple[str, Union[int, str, List]]]):
+def run_vm_test(cases: List[Tuple[str, Union[int, str, List, Dict]]]):
     for code, expected in cases:
         program = parser.parse(code)
         comp = Compiler()
@@ -68,6 +68,19 @@ def test_expected_object(expected, actual: object.Object):
             return f"wrong num of elements. want={len(expected)} got={len(array.elements)}"
         for i, expected_elem in enumerate(expected):
             err = test_integer_object(expected_elem, array.elements[i])
+            if err is not None:
+                print(f"test_integer_object failed: {err}")
+    elif exp_type == object.HashKey:
+        h, ok = test_util.check_type(object.Hash, actual)
+        if not ok:
+            return f"object is not hash. got={type(actual)} {actual}"
+        if len(h.pairs) != len(expected):
+            return f"hash has wrong num of pairs. want={len(expected)} got={len(h.pairs)}"
+        for k, v in expected.items():
+            if k not in h.pairs:
+                print(f"no pair for given key in pairs")
+            pair = h.pairs[k]
+            err = test_integer_object(v, pair.value)
             if err is not None:
                 print(f"test_integer_object failed: {err}")
     return f"type not supported: {exp_type}"
@@ -184,6 +197,16 @@ def test_array_expressions():
     if run_vm_test(cases) is True:
         print('test_array_expressions Accepted')
 
+def test_hash_literals():
+    cases = [("{}", {}),
+             ("{1:2, 2:3}", {object.Integer(value=1).hash_key() : 2,
+                             object.Integer(value=2).hash_key(): 3}),
+             ("{1+1:2*2, 3+3:4*4}", {object.Integer(value=2).hash_key() : 4,
+                             object.Integer(value=6).hash_key(): 16}),
+             ]
+    if run_vm_test(cases) is True:
+        print('test_hash_literals Accepted')
+
 
 if __name__ == '__main__':
     test_integer_arithmetic()
@@ -192,3 +215,4 @@ if __name__ == '__main__':
     test_global_let_statements()
     test_string_expressions()
     test_array_expressions()
+    test_hash_literals()

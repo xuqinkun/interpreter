@@ -134,24 +134,26 @@ def test_boolean_expressions():
 
 def test_conditionals():
     cases = [
-        # ('if(true) {10};3333;', (10, 3333), (
-        #    code.make(code.OpTrue),
-        #    code.make(code.OpJumpNotTruthy, 7),
-        #    code.make(code.OpConstant, 0),
-        #    code.make(code.OpPop),
-        #    code.make(code.OpConstant, 1),
-        #    code.make(code.OpPop)
-        # )),
-        # ('if (true) { 10 } else { 20 }; 3333;',  (10, 20, 3333), (
-        #     code.make(code.OpTrue),
-        #     code.make(code.OpJumpNotTruthy, 10),
-        #     code.make(code.OpConstant, 0),
-        #     code.make(code.OpJump, 13),
-        #     code.make(code.OpConstant, 1),
-        #     code.make(code.OpPop),
-        #     code.make(code.OpConstant, 2),
-        #     code.make(code.OpPop)
-        # )),
+        ('if(true) {10};3333;', (10, 3333), (
+           code.make(code.OpTrue),
+           code.make(code.OpJumpNotTruthy, 10),
+           code.make(code.OpConstant, 0),
+           code.make(code.OpJump, 11),
+           code.make(code.OpNull),
+           code.make(code.OpPop),
+           code.make(code.OpConstant, 1),
+           code.make(code.OpPop)
+        )),
+        ('if (true) { 10 } else { 20 }; 3333;',  (10, 20, 3333), (
+            code.make(code.OpTrue),
+            code.make(code.OpJumpNotTruthy, 10),
+            code.make(code.OpConstant, 0),
+            code.make(code.OpJump, 13),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpPop),
+            code.make(code.OpConstant, 2),
+            code.make(code.OpPop)
+        )),
         ('if (true) { 10 }; 3333;',  (10, 3333), (
             code.make(code.OpTrue),
             code.make(code.OpJumpNotTruthy, 10),
@@ -248,6 +250,37 @@ def test_array_literals():
         return err
     return True
 
+def test_hash_literals():
+    cases = [
+        ("{}", (), (code.make(code.OpHash, 0), code.make(code.OpPop))),
+        ("{1:2, 3:4, 5:6}", (1,2,3,4,5,6), (code.make(code.OpConstant, 0),
+                             code.make(code.OpConstant, 1),
+                             code.make(code.OpConstant, 2),
+                             code.make(code.OpConstant, 3),
+                             code.make(code.OpConstant, 4),
+                             code.make(code.OpConstant, 5),
+                             code.make(code.OpHash, 6),
+                             code.make(code.OpPop),
+                             )
+         ),
+        ("{1:2+3, 4: 5*6}", (1, 2, 3, 4, 5, 6), (code.make(code.OpConstant, 0),
+                                                 code.make(code.OpConstant, 1),
+                                                 code.make(code.OpConstant, 2),
+                                                 code.make(code.OpAdd),
+                                                 code.make(code.OpConstant, 3),
+                                                 code.make(code.OpConstant, 4),
+                                                 code.make(code.OpConstant, 5),
+                                                 code.make(code.OpMul),
+                                                 code.make(code.OpHash, 4),
+                                                 code.make(code.OpPop),
+                                                 )
+         ),
+             ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 if __name__ == '__main__':
     tests = [
         test_integer_arithmetic,
@@ -255,7 +288,8 @@ if __name__ == '__main__':
         test_conditionals,
         test_global_let_statements,
         test_string_expressions,
-        test_array_literals
+        test_array_literals,
+        test_hash_literals
     ]
     test_util.run_cases(tests)
 
