@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import List, cast
 
-from util import test_util
 from monkey_code import code
 from monkey_compiler import compiler
 from monkey_object import object
@@ -97,26 +96,32 @@ class VM:
                 ip += 2
                 self.globals[global_index] = self.pop()
             elif op == code.OpGetGlobal:
-                global_index = code.read_uint16(self.instructions[ip + 1: ])
+                global_index = code.read_uint16(self.instructions[ip + 1:])
                 ip += 2
                 err = self.push(self.globals[global_index])
                 if err is not None:
                     return err
             elif op == code.OpArray:
-                num_elements = int(code.read_uint16(self.instructions[ip+1:]))
+                num_elements = int(code.read_uint16(self.instructions[ip + 1:]))
                 ip += 2
                 array = self.build_array(self.sp - num_elements, self.sp)
                 err = self.push(array)
                 if err is not None:
                     return err
             elif op == code.OpHash:
-                num_elements = int(code.read_uint16(self.instructions[ip+1:]))
+                num_elements = int(code.read_uint16(self.instructions[ip + 1:]))
                 ip += 2
                 hash_obj, err = self.build_hash(self.sp - num_elements, self.sp)
                 if err is not None:
                     return err
                 self.sp = self.sp - num_elements
                 err = self.push(hash_obj)
+                if err is not None:
+                    return err
+            elif op == code.OpIndex:
+                index = self.pop()
+                left = self.pop()
+                err = self.execute_index_expression(left, index)
                 if err is not None:
                     return err
             else:
@@ -127,11 +132,33 @@ class VM:
     def build_array(self, start_idx, end_idx):
         return object.Array(self.stack[start_idx: end_idx])
 
+    def execute_index_expression(self, left: object.Object, index: object.Object):
+        if left.type() == object.ARRAY_OBJ and index.type() == object.INTEGER_OBJ:
+            return self.execute_array_index(left, index)
+        elif left.type() == object.HASH_OBJ:
+            return self.execute_hash_index(left, index)
+        return f"index operator not supported: {left.type()}"
+
+    def execute_array_index(self, array: object.Array, index: object.Integer):
+        pos = index.value
+        size = len(array.elements)
+        if pos < 0 or pos >= size:
+            return self.push(NULL)
+        return self.push(array.elements[pos])
+
+    def execute_hash_index(self, hash_pairs: object.Hash, index: object.Hashable):
+        if not isinstance(index, object.Hashable):
+            return f"unhashable key {index.type()}"
+        if index.hash_key() not in hash_pairs.pairs:
+            return self.push(NULL)
+        pair = hash_pairs.pairs[index.hash_key()]
+        return self.push(pair.value)
+
     def build_hash(self, start_idx, end_idx):
         hashed_pairs = {}
         for i in range(start_idx, end_idx, 2):
             key = self.stack[i]
-            value = self.stack[i+1]
+            value = self.stack[i + 1]
             pair = object.HashPair(key=key, value=value)
             if not isinstance(key, object.Hashable):
                 return f"unhashable key {key.type()}"

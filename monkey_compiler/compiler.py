@@ -164,6 +164,14 @@ class Compiler:
                 if err is not None:
                     return err
             self.emit(code.OpHash, len(node.pairs) * 2)
+        elif isinstance(node, ast.IndexExpression):
+            err = self.compile(node.left)
+            if err is not None:
+                return err
+            err = self.compile(node.index)
+            if err is not None:
+                return err
+            self.emit(code.OpIndex)
         return None
 
     def last_instruction_is_pop(self):

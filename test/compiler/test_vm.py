@@ -208,6 +208,23 @@ def test_hash_literals():
         print('test_hash_literals Accepted')
 
 
+def test_index_expressions():
+    cases = [
+        ("[1, 2, 3][1]", 2),
+        ("[1, 2, 3][0 + 2]", 3),
+        ("[[1, 1, 1]][0][0]", 1),
+        ("[][0]", object.NULL),
+        ("[1, 2, 3][99]", object.NULL),
+        ("[1][-1]", object.NULL),
+        ("{1: 1, 2: 2}[1]", 1),
+        ("{1: 1, 2: 2}[2]", 2),
+        ("{1: 1}[0]", object.NULL),
+        ("{}[0]", object.NULL),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_index_expressions Accepted')
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
@@ -216,3 +233,4 @@ if __name__ == '__main__':
     test_string_expressions()
     test_array_expressions()
     test_hash_literals()
+    test_index_expressions()

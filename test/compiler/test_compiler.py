@@ -281,6 +281,38 @@ def test_hash_literals():
         return err
     return True
 
+
+def test_index_expressions():
+    cases = [
+        ("[1,2,3][1 + 1]", (1,2,3,1,1),
+            (
+             code.make(code.OpConstant, 0),
+             code.make(code.OpConstant, 1),
+             code.make(code.OpConstant, 2),
+             code.make(code.OpArray, 3),
+             code.make(code.OpConstant, 3),
+             code.make(code.OpConstant, 4),
+             code.make(code.OpAdd),
+             code.make(code.OpIndex),
+             code.make(code.OpPop),
+            )
+         ),
+        ("{1:2}[2-1]", (1, 2, 2, 1), (code.make(code.OpConstant, 0),
+                                                 code.make(code.OpConstant, 1),
+                                                 code.make(code.OpHash, 2),
+                                                 code.make(code.OpConstant, 2),
+                                                 code.make(code.OpConstant, 3),
+                                                 code.make(code.OpSub),
+                                                 code.make(code.OpIndex),
+                                                 code.make(code.OpPop),
+                                                 )
+         ),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 if __name__ == '__main__':
     tests = [
         test_integer_arithmetic,
@@ -289,7 +321,8 @@ if __name__ == '__main__':
         test_global_let_statements,
         test_string_expressions,
         test_array_literals,
-        test_hash_literals
+        test_hash_literals,
+        test_index_expressions
     ]
     test_util.run_cases(tests)
 
