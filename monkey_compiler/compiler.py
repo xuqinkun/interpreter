@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from ftplib import error_temp
 from typing import List
 
 from monkey_ast import ast

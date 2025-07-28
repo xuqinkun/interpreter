@@ -33,7 +33,7 @@ def run_vm_test(cases: List[Tuple[str, Union[int, str, List, Dict]]]):
         err = comp.compile(program)
         if err is not None:
             return f"compiler error: {err}"
-        vm = VM.new(comp.bytecode())
+        vm = VM(comp.bytecode())
         err = vm.run()
         if err is not None:
             print(f"vm error: {err}")
@@ -86,13 +86,14 @@ def test_expected_object(expected, actual: object.Object):
     return f"type not supported: {exp_type}"
 
 
-def test_string_object(expected:str, actual: object.Object):
+def test_string_object(expected: str, actual: object.Object):
     result, ok = test_util.check_type(object.String, actual)
     if not ok:
         return f"object is not String. got={type(actual)} ({actual})"
     if result.value != expected:
         return f"object has wrong value. got={result.value} want={expected}"
     return None
+
 
 def test_infix_expressions():
     tests = [("1", 1),
@@ -153,6 +154,7 @@ def test_integer_arithmetic():
     if run_vm_test(tests) is True:
         print('test_integer_arithmetic Accepted')
 
+
 def test_conditionals():
     tests = [
         ("if (true) { 10 }", 10),
@@ -169,8 +171,9 @@ def test_conditionals():
     if run_vm_test(tests) is True:
         print('test_conditionals Accepted')
 
+
 def test_global_let_statements():
-    tests =[
+    tests = [
         ("let one = 1; one", 1),
         ("let one = 1; let two = 2; one + two", 3),
         ("let one = 1; let two = one + one; one + two", 3)]
@@ -191,18 +194,19 @@ def test_string_expressions():
 def test_array_expressions():
     cases = [
         ('[]', []),
-        ('[1,2,3]', [1,2,3]),
-        ('[1+2,3*4,5+6]', [3,12,11]),
+        ('[1,2,3]', [1, 2, 3]),
+        ('[1+2,3*4,5+6]', [3, 12, 11]),
     ]
     if run_vm_test(cases) is True:
         print('test_array_expressions Accepted')
 
+
 def test_hash_literals():
     cases = [("{}", {}),
-             ("{1:2, 2:3}", {object.Integer(value=1).hash_key() : 2,
+             ("{1:2, 2:3}", {object.Integer(value=1).hash_key(): 2,
                              object.Integer(value=2).hash_key(): 3}),
-             ("{1+1:2*2, 3+3:4*4}", {object.Integer(value=2).hash_key() : 4,
-                             object.Integer(value=6).hash_key(): 16}),
+             ("{1+1:2*2, 3+3:4*4}", {object.Integer(value=2).hash_key(): 4,
+                                     object.Integer(value=6).hash_key(): 16}),
              ]
     if run_vm_test(cases) is True:
         print('test_hash_literals Accepted')
@@ -225,6 +229,53 @@ def test_index_expressions():
         print('test_index_expressions Accepted')
 
 
+def test_calling_functions_without_arguments():
+    cases = [
+        ('let fivePlusTen = fn() {5+10};fivePlusTen();', 15),
+        ('let one = fn() { 1; };let two = fn() { 2; };one() + two()', 3),
+        ('let a = fn() { 1 };let b = fn() { a() + 1 };let c = fn() { b() + 1 };c();', 3),
+        ("""
+        let earlyExit = fn() { return 99; 100; };
+        earlyExit();
+        """, 99),
+        ("""
+        let earlyExit = fn() { return 99; return 100; };
+        earlyExit();
+        """, 99),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_calling_functions_without_arguments Accepted')
+
+
+def test_calling_functions_without_return_value():
+    cases = [
+        ("""
+        let noReturn = fn() { };
+        noReturn();
+        """, object.NULL),
+        ("""
+        let noReturn = fn() { };
+        let noReturnTwo = fn() { noReturn(); };
+        noReturn();
+        noReturnTwo();
+        """, object.NULL),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_calling_functions_without_return_value Accepted')
+
+
+def test_first_class_functions():
+    cases = [
+        ("""
+        let returnsOne = fn() { 1; };
+        let returnsOneReturner = fn() { returnsOne; };
+        returnsOneReturner()();
+        """, 1),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_first_class_functions Accepted')
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
@@ -234,3 +285,6 @@ if __name__ == '__main__':
     test_array_expressions()
     test_hash_literals()
     test_index_expressions()
+    test_calling_functions_without_arguments()
+    test_calling_functions_without_return_value()
+    test_first_class_functions()

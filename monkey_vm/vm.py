@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, cast
 
+from monkey_object.object import CompiledFunction
+from monkey_vm import frame
 from monkey_code import code
 from monkey_compiler import compiler
 from monkey_object import object
@@ -10,29 +12,31 @@ GLOBAL_SIZE = 65536
 TRUE = object.Boolean(True)
 FALSE = object.Boolean(False)
 NULL = object.Null()
+MAX_FRAMES = 1024
 
 
 @dataclass
 class VM:
     constants: List[object.Object]
-    instructions: code.Instructions
     stack: List[object.Object]
     sp: int
     globals: List[object.Object]
+    frames: List[frame.Frame]
+    frame_index: int
 
-    @staticmethod
-    def new(bytecode: compiler.Bytecode):
-        stack = cast(List[object.Object], [None] * STACK_SIZE)
-        globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
-        return VM(instructions=bytecode.instructions,
-                  constants=bytecode.constants,
-                  stack=stack,
-                  sp=0,
-                  globals=globals)
+
+    def __init__(self, bytecode: compiler.Bytecode):
+        self.constants = bytecode.constants
+        self.stack = cast(List[object.Object], [None] * STACK_SIZE)
+        self.sp = 0
+        self.globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
+        self.frame_index = 1
+        self.frames = cast(List[frame.Frame], [None] * MAX_FRAMES)
+        self.frames[0] = frame.Frame(fn=object.CompiledFunction(instructions=bytecode.instructions))
 
     @staticmethod
     def new_with_global_state(bytecode: compiler.Bytecode, s: List[object.Object]):
-        vm = VM.new(bytecode)
+        vm = VM(bytecode)
         vm.globals = s
         return vm
 
@@ -41,14 +45,27 @@ class VM:
             return None
         return self.stack[self.sp - 1]
 
+    def current_frame(self):
+        return self.frames[self.frame_index - 1]
+
+    def push_frame(self, f: frame.Frame):
+        self.frames[self.frame_index] = f
+        self.frame_index += 1
+
+    def pop_frame(self):
+        self.frame_index -= 1
+        return self.frames[self.frame_index]
+
     def run(self):
-        ip = 0
-        while ip < len(self.instructions):
-            op = code.Opcode(self.instructions[ip])
+        while self.current_frame().ip < len(self.current_frame().instructions()) - 1:
+            self.current_frame().ip += 1
+            ip = self.current_frame().ip
+            ins = self.current_frame().instructions()
+            op = code.Opcode(ins[ip])
             definition, ok = code.lookup(op)
             if op == code.OpConstant:
-                const_index = code.read_uint16(self.instructions[ip + 1:])
-                ip += 2
+                const_index = code.read_uint16(ins[ip + 1:])
+                self.current_frame().ip += 2
                 err = self.push(self.constants[const_index])
                 if err is not None:
                     return err
@@ -79,38 +96,38 @@ class VM:
                 if err is not None:
                     return err
             elif op == code.OpJump:
-                pos = code.read_uint16(self.instructions[ip + 1:])
-                ip = pos - 1
+                pos = code.read_uint16(ins[ip + 1:])
+                self.current_frame().ip = pos - 1
             elif op == code.OpJumpNotTruthy:
-                pos = code.read_uint16(self.instructions[ip + 1:])
-                ip += 2
+                pos = code.read_uint16(ins[ip + 1:])
+                self.current_frame().ip += 2
                 condition = self.pop()
                 if not is_truthy(condition):
-                    ip = pos - 1
+                    self.current_frame().ip = pos - 1
             elif op == code.OpNull:
                 err = self.push(NULL)
                 if err is not None:
                     return err
             elif op == code.OpSetGlobal:
-                global_index = code.read_uint16(self.instructions[ip + 1:])
-                ip += 2
+                global_index = code.read_uint16(ins[ip + 1:])
+                self.current_frame().ip += 2
                 self.globals[global_index] = self.pop()
             elif op == code.OpGetGlobal:
-                global_index = code.read_uint16(self.instructions[ip + 1:])
-                ip += 2
+                global_index = code.read_uint16(ins[ip + 1:])
+                self.current_frame().ip += 2
                 err = self.push(self.globals[global_index])
                 if err is not None:
                     return err
             elif op == code.OpArray:
-                num_elements = int(code.read_uint16(self.instructions[ip + 1:]))
-                ip += 2
+                num_elements = int(code.read_uint16(ins[ip + 1:]))
+                self.current_frame().ip += 2
                 array = self.build_array(self.sp - num_elements, self.sp)
                 err = self.push(array)
                 if err is not None:
                     return err
             elif op == code.OpHash:
-                num_elements = int(code.read_uint16(self.instructions[ip + 1:]))
-                ip += 2
+                num_elements = int(code.read_uint16(ins[ip + 1:]))
+                self.current_frame().ip += 2
                 hash_obj, err = self.build_hash(self.sp - num_elements, self.sp)
                 if err is not None:
                     return err
@@ -122,6 +139,25 @@ class VM:
                 index = self.pop()
                 left = self.pop()
                 err = self.execute_index_expression(left, index)
+                if err is not None:
+                    return err
+            elif op == code.OpCall:
+                fn = self.stack[self.sp - 1]
+                if not isinstance(fn, object.CompiledFunction):
+                    return f"calling non-function"
+                frm = frame.Frame(fn=fn)
+                self.push_frame(frm)
+            elif op == code.OpReturnValue:
+                return_value = self.pop()
+                self.pop_frame()
+                self.pop()
+                err = self.push(return_value)
+                if err is not None:
+                    return err
+            elif op == code.OpReturn:
+                self.pop_frame()
+                self.pop()
+                err = self.push(object.NULL)
                 if err is not None:
                     return err
             else:
