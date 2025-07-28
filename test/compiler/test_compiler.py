@@ -345,7 +345,6 @@ def test_functions():
     ]
     err = run_compiler_tests(cases)
     if err is not None:
-        print(err)
         return err
     return True
 
@@ -380,6 +379,27 @@ def test_compiler_scopes():
     print('test_compiler_scopes pass')
 
 
+def test_function_calls():
+    cases = [
+        ("fn() {24}();", (24, code.Instructions(b''.join([code.make(code.OpConstant, 0),
+                                              code.make(code.OpReturnValue)])),),
+         (code.make(code.OpConstant, 1),
+          code.make(code.OpCall),
+          code.make(code.OpPop))),
+        ("let noArg = fn() {24}; noArg();", (24, code.Instructions(b''.join([
+                                              code.make(code.OpConstant, 0),
+                                              code.make(code.OpReturnValue)])),),
+         (code.make(code.OpConstant, 1),
+          code.make(code.OpSetGlobal, 0),
+          code.make(code.OpGetGlobal, 0),
+          code.make(code.OpCall),
+          code.make(code.OpPop))),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 if __name__ == '__main__':
     test_compiler_scopes()
     tests = [
@@ -391,7 +411,8 @@ if __name__ == '__main__':
         test_array_literals,
         test_hash_literals,
         test_index_expressions,
-        test_functions
+        test_functions,
+        test_function_calls
     ]
     test_util.run_cases(tests)
 

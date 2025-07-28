@@ -202,6 +202,11 @@ class Compiler:
             if err is not None:
                 return err
             self.emit(code.OpReturnValue)
+        elif isinstance(node, ast.CallExpression):
+            err = self.compile(node.function)
+            if err is not None:
+                return err
+            self.emit(code.OpCall)
         return None
 
     def last_instruction_is(self, op: code.Opcode):
