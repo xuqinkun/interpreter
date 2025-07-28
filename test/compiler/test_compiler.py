@@ -1,12 +1,14 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from monkey_parser import parser
 from monkey_code import code
 from monkey_compiler.compiler import Compiler
 from monkey_object import object
 from util import test_util
 
-def concat_instructions(instructions_list: List[code.Instructions]):
-    return code.Instructions(b''.join(instructions_list))
+def concat_instructions(instructions: Union[List[code.Instructions], bytearray]):
+    if isinstance(instructions, (bytearray, bytes)):
+        return code.Instructions(instructions)
+    return code.Instructions(b''.join(instructions))
 
 
 def test_instructions(expected: List[code.Instructions], actual: code.Instructions):
@@ -33,10 +35,17 @@ def test_constants(expected: List, actual: List[object.Object]):
         return False, f"wrong number of constants. got={len(actual)} want={len(expected)}"
     for i, constant in enumerate(expected):
         c_type = type(constant)
+        actual_obj = actual[i]
         if c_type == int:
-            err = test_integer_object(constant, actual[i])
+            err = test_integer_object(constant, actual_obj)
             if err is not None:
                 return f"constant {i}: test_integer_object failed: {err}"
+        elif c_type == code.Instructions:
+            if not isinstance(actual_obj, object.CompiledFunction):
+                return f"constant {i} not a function: {actual_obj}"
+            err = test_instructions(constant, actual[i].instructions)
+            if err is not None:
+                return f"constant {i}: test_instructions failed: {err}"
     return None
 
 
@@ -313,7 +322,66 @@ def test_index_expressions():
         return err
     return True
 
+
+def test_functions():
+    cases = [
+        ("fn() {return 5+10}", (5, 10, code.Instructions(b''.join([code.make(code.OpConstant, 0),
+                                        code.make(code.OpConstant, 1),
+                                        code.make(code.OpAdd),
+                                        code.make(code.OpReturnValue)]))),
+         (code.make(code.OpConstant, 2), code.make(code.OpPop))),
+        ("fn() {5+10}", (5, 10, code.Instructions(b''.join([code.make(code.OpConstant, 0),
+                                        code.make(code.OpConstant, 1),
+                                        code.make(code.OpAdd),
+                                        code.make(code.OpReturnValue)]))),
+         (code.make(code.OpConstant, 2), code.make(code.OpPop))),
+        ("fn() {1;2}", (1, 2, code.Instructions(b''.join([code.make(code.OpConstant, 0),
+                                        code.make(code.OpPop),
+                                        code.make(code.OpConstant, 1),
+                                        code.make(code.OpReturnValue)]))),
+         (code.make(code.OpConstant, 2), code.make(code.OpPop))),
+        ("fn() {}", (code.Instructions(b''.join([code.make(code.OpReturn)])),),
+         (code.make(code.OpConstant, 0), code.make(code.OpPop))),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        print(err)
+        return err
+    return True
+
+
+def test_compiler_scopes():
+    compiler = Compiler()
+    if compiler.scope_index != 0:
+        return f"scope_index wrong. got={compiler.scope_index}, want=0"
+    compiler.emit(code.OpMul)
+    compiler.enter_scope()
+    if compiler.scope_index != 1:
+        return f"scope index wrong. got={compiler.scope_index} want=1"
+    compiler.emit(code.OpSub)
+
+    if len(compiler.scopes[compiler.scope_index].instructions) != 1:
+        return f"instructions length wrong. got={len(compiler.scopes[compiler.scope_index].instructions)} want=1"
+    last_instruction = compiler.scopes[compiler.scope_index].last_instruction
+    if last_instruction.op_code != code.OpSub:
+        return f"last_instruction.OpCode wrong. got={last_instruction.op_code} want={code.OpSub}"
+    compiler.leave_scope()
+    if compiler.scope_index != 0:
+        return f"scope index wrong. got={compiler.scope_index} want=0"
+    compiler.emit(code.OpAdd)
+    if len(compiler.scopes[compiler.scope_index].instructions) != 2:
+        return f"instructions length wrong. got={len(compiler.scopes[compiler.scope_index].instructions)} want=2"
+    last_instruction = compiler.scopes[compiler.scope_index].last_instruction
+    if last_instruction.op_code != code.OpAdd:
+        return f"last_instruction.OpCode wrong. got={last_instruction.op_code} want={code.OpAdd}"
+    previous_instruction = compiler.scopes[compiler.scope_index].previous_instruction
+    if previous_instruction.op_code != code.OpMul:
+        return f"previous_instruction.OpCode wrong. got={previous_instruction.op_code} want={code.OpMul}"
+    print('test_compiler_scopes pass')
+
+
 if __name__ == '__main__':
+    test_compiler_scopes()
     tests = [
         test_integer_arithmetic,
         test_boolean_expressions,
@@ -322,7 +390,8 @@ if __name__ == '__main__':
         test_string_expressions,
         test_array_literals,
         test_hash_literals,
-        test_index_expressions
+        test_index_expressions,
+        test_functions
     ]
     test_util.run_cases(tests)
 

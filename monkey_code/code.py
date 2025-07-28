@@ -26,6 +26,9 @@ OpSetGlobal = 18
 OpArray = 19
 OpHash = 20
 OpIndex = 21
+OpCall = 22
+OpReturnValue = 23
+OpReturn = 24
 
 
 @dataclass
@@ -55,6 +58,9 @@ definitions: Dict[Opcode, Definition] = {
     OpArray: Definition(name="OpArray", operand_widths=[2]),
     OpHash: Definition(name="OpHash", operand_widths=[2]),
     OpIndex: Definition(name="OpIndex", operand_widths=[]),
+    OpCall: Definition(name="OpCall", operand_widths=[]),
+    OpReturnValue: Definition(name="OpReturnValue", operand_widths=[]),
+    OpReturn: Definition(name="OpReturn", operand_widths=[]),
 }
 
 @dataclass

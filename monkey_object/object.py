@@ -2,7 +2,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Dict, Callable
-
+from monkey_code import code
 from monkey_ast import ast
 
 NULL_OBJ = "NULL"
@@ -17,6 +17,7 @@ ARRAY_OBJ = "ARRAY"
 HASH_OBJ = "HASH"
 QUOTE_OBJ = "QUOTE"
 MACRO_OBJ = "MACRO"
+COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION_OBJ"
 
 
 @dataclass
@@ -288,3 +289,14 @@ class Macro(Object):
 
     def __repr__(self):
         return self.inspect()
+
+
+@dataclass
+class CompiledFunction(Object):
+    instructions: code.Instructions
+
+    def type(self) -> str:
+        return COMPILED_FUNCTION_OBJ
+
+    def inspect(self) -> str:
+        return f"CompiledFunction {self}"

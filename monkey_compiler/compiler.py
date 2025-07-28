@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from ftplib import error_temp
 from typing import List
 
 from monkey_ast import ast
@@ -19,6 +20,12 @@ class EmittedInstruction:
     pos: int = 0
 
 
+@dataclass
+class CompilationScope:
+    instructions: code.Instructions = b''
+    last_instruction: EmittedInstruction=None
+    previous_instruction: EmittedInstruction=None
+
 @dataclass()
 class Compiler:
     instructions: code.Instructions = b''
@@ -26,6 +33,8 @@ class Compiler:
     last_instruction: EmittedInstruction = None
     previous_instruction: EmittedInstruction = None
     symbol_table: SymbolTable = None
+    scopes: List[CompilationScope] = None
+    scope_index: int = 0
 
     def __init__(self):
         self.instructions = code.Instructions()
@@ -33,6 +42,10 @@ class Compiler:
         self.last_instruction = EmittedInstruction()
         self.previous_instruction = EmittedInstruction()
         self.symbol_table = SymbolTable()
+        self.scopes = [CompilationScope(instructions=code.Instructions(),
+                                        last_instruction=EmittedInstruction(),
+                                        previous_instruction=EmittedInstruction())]
+        self.scope_index = 0
 
     @staticmethod
     def new_with_state(s: SymbolTable, constants: List[object.Object]):
@@ -107,12 +120,12 @@ class Compiler:
             err = self.compile(node.consequence)
             if err is not None:
                 return err
-            if self.last_instruction_is_pop():
+            if self.last_instruction_is(code.OpPop):
                 self.remove_last_pop()
 
             jump_pos = self.emit(code.OpJump, 9999)
 
-            after_consequence_pos = len(self.instructions)
+            after_consequence_pos = len(self.current_instructions())
             self.change_operand(jump_not_truthy_pos, after_consequence_pos)
             if node.alternative is None:
                 self.emit(code.OpNull)
@@ -120,10 +133,10 @@ class Compiler:
                 err = self.compile(node.alternative)
                 if err is not None:
                     return err
-                if self.last_instruction_is_pop():
+                if self.last_instruction_is(code.OpPop):
                     self.remove_last_pop()
-            after_consequence_pos = len(self.instructions)
-            self.change_operand(jump_pos, after_consequence_pos)
+            after_alternative_pos = len(self.current_instructions())
+            self.change_operand(jump_pos, after_alternative_pos)
         elif isinstance(node, ast.IntegerLiteral):
             integer = object.Integer(node.value)
             pos = self.add_constant(integer)
@@ -172,14 +185,42 @@ class Compiler:
             if err is not None:
                 return err
             self.emit(code.OpIndex)
+        elif isinstance(node, ast.FunctionLiteral):
+            self.enter_scope()
+            err = self.compile(node.body)
+            if err is not None:
+                return err
+            if self.last_instruction_is(code.OpPop):
+                self.replace_last_pop_with_return()
+            if not self.last_instruction_is(code.OpReturnValue):
+                self.emit(code.OpReturn)
+            instructions = self.leave_scope()
+            compiled_function = object.CompiledFunction(instructions=instructions)
+            self.emit(code.OpConstant, self.add_constant(compiled_function))
+        elif isinstance(node, ast.ReturnStatement):
+            err = self.compile(node.return_value)
+            if err is not None:
+                return err
+            self.emit(code.OpReturnValue)
         return None
 
-    def last_instruction_is_pop(self):
-        return self.last_instruction.op_code == code.OpPop
+    def last_instruction_is(self, op: code.Opcode):
+        if len(self.current_instructions()) == 0:
+            return False
+        return self.scopes[self.scope_index].last_instruction.op_code == op
+
+    def replace_last_pop_with_return(self):
+        last_pos = self.scopes[self.scope_index].last_instruction.pos
+        self.replace_instructions(last_pos, code.make(code.OpReturnValue))
+        self.scopes[self.scope_index].last_instruction.op_code = code.OpReturnValue
 
     def remove_last_pop(self):
-        self.instructions = code.Instructions(self.instructions[:self.last_instruction.pos])
-        self.last_instruction = self.previous_instruction
+        last = self.scopes[self.scope_index].last_instruction
+        previous = self.scopes[self.scope_index].previous_instruction
+        old = self.current_instructions()
+        new = old[:last.pos]
+        self.scopes[self.scope_index].instructions = new
+        self.scopes[self.scope_index].last_instruction = previous
 
     def add_constant(self, obj: object.Object):
         self.constants.append(obj)
@@ -194,25 +235,41 @@ class Compiler:
         return pos
 
     def replace_instructions(self, pos: int, new_instruction: code.Instructions):
+        ins = self.current_instructions()
         for i in range(len(new_instruction)):
-            self.instructions[pos+i] = new_instruction[i]
+            ins[pos+i] = new_instruction[i]
 
     def set_last_instruction(self, op: code.Opcode, pos: int):
-        previous = self.last_instruction
+        previous = self.scopes[self.scope_index].last_instruction
         last = EmittedInstruction(op_code=op, pos=pos)
-        self.previous_instruction = previous
-        self.last_instruction = last
+        self.scopes[self.scope_index].previous_instruction = previous
+        self.scopes[self.scope_index].last_instruction = last
 
     def add_instruction(self, ins: code.Instructions) -> int:
-        pos_new_instruction = len(self.instructions)
-        self.instructions += ins
+        pos_new_instruction = len(self.current_instructions())
+        self.scopes[self.scope_index].instructions += ins
         return pos_new_instruction
 
-
     def change_operand(self, op_pos: int, operand: int):
-        op = code.Opcode(self.instructions[op_pos])
+        op = code.Opcode(self.current_instructions()[op_pos])
         new_instruction = code.make(op, operand)
         self.replace_instructions(op_pos, new_instruction)
 
     def bytecode(self):
-        return Bytecode(self.instructions, self.constants)
+        return Bytecode(self.current_instructions(), self.constants)
+
+    def current_instructions(self):
+        return self.scopes[self.scope_index].instructions
+
+    def enter_scope(self):
+        scope = CompilationScope(instructions=code.Instructions(),
+                                 last_instruction=EmittedInstruction(),
+                                 previous_instruction=EmittedInstruction())
+        self.scopes.append(scope)
+        self.scope_index += 1
+
+    def leave_scope(self):
+        instructions = self.current_instructions()
+        self.scopes = self.scopes[: len(self.scopes) - 1]
+        self.scope_index -= 1
+        return instructions
