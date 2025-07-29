@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from typing import List, cast
 
-from monkey_object.object import CompiledFunction
-from monkey_vm import frame
 from monkey_code import code
 from monkey_compiler import compiler
 from monkey_object import object
+from monkey_vm import frame
 
 STACK_SIZE = 2048
 GLOBAL_SIZE = 65536

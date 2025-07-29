@@ -4,7 +4,8 @@ from util.test_util import run_cases
 def test_make():
     cases = [
         (OpConstant, [65534], [OpConstant, 255, 254]),
-        (OpAdd, [], [OpAdd])
+        (OpAdd, [], [OpAdd]),
+        (OpGetLocal, [255], [OpGetLocal, 255]),
     ]
     for (op, operands, expected) in cases:
         instruction = make(op, *operands)
@@ -13,7 +14,7 @@ def test_make():
         for i, exp in enumerate(expected):
             if instruction[i] != exp:
                 return False, f"wrong byte at pos {i}. want={exp}, got={instruction[i]}"
-        return True
+    return True
 
 
 

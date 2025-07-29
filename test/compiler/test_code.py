@@ -4,10 +4,11 @@ from util import test_util
 def test_instructions_string():
     instructions = [
         code.make(code.OpAdd),
+        code.make(code.OpGetLocal, 1),
         code.make(code.OpConstant, 2),
         code.make(code.OpConstant, 65535),
     ]
-    expected  = "0000 OpAdd\n0001 OpConstant 2\n0004 OpConstant 65535\n"
+    expected  = "0000 OpAdd\n0001 OpGetLocal 1\n0003 OpConstant 2\n0006 OpConstant 65535\n"
 
     concatenated = code.Instructions(b''.join(instructions))
     if str(concatenated) != expected:
@@ -17,7 +18,8 @@ def test_instructions_string():
 
 def test_read_operands():
     cases = [
-        (code.OpConstant, [65535], 2)
+        (code.OpConstant, [65535], 2),
+        (code.OpGetLocal, [255], 1),
     ]
     for op, operands, read_bytes in cases:
         ins = code.make(op, *operands)

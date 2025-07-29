@@ -29,6 +29,8 @@ OpIndex = 21
 OpCall = 22
 OpReturnValue = 23
 OpReturn = 24
+OpGetLocal = 25
+OpSetLocal = 26
 
 
 @dataclass
@@ -61,6 +63,8 @@ definitions: Dict[Opcode, Definition] = {
     OpCall: Definition(name="OpCall", operand_widths=[]),
     OpReturnValue: Definition(name="OpReturnValue", operand_widths=[]),
     OpReturn: Definition(name="OpReturn", operand_widths=[]),
+    OpGetLocal: Definition(name="OpGetLocal", operand_widths=[1]),
+    OpSetLocal: Definition(name="OpSetLocal", operand_widths=[1]),
 }
 
 @dataclass
@@ -118,6 +122,8 @@ def make(op: int, *operands) -> Instructions:
         if width == 2:
             # 以大端序写入2字节无符号整数
             struct.pack_into('>H', instruction, offset, operand)
+        elif width == 1:
+            instruction[offset] = operand
         offset += width
     return Instructions(instruction)
 
@@ -126,7 +132,10 @@ def read_operands(define: Definition, ins: bytes):
     operands = [0] * len(define.operand_widths)
     offset = 0
     for i, width in enumerate(define.operand_widths):
-        operands[i] = read_uint16(ins[offset:offset + width])
+        if width == 2:
+            operands[i] = read_uint16(ins[offset:])
+        elif width == 1:
+            operands[i] = read_uint8(ins[offset:])
         offset += width
     return operands, offset
 
@@ -134,3 +143,8 @@ def read_operands(define: Definition, ins: bytes):
 def read_uint16(ins: bytes) -> int:
     """Read 2 bytes as big-endian unsigned short (0-65535)"""
     return struct.unpack('>H', ins[:2])[0]
+
+
+def read_uint8(data):
+    """从字节串读取1个无符号字节(8位)"""
+    return data[0] if data else 0
