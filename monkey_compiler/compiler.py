@@ -3,7 +3,7 @@ from typing import List
 
 from monkey_ast import ast
 from monkey_code import code
-from monkey_compiler.symbol_table import SymbolTable
+from monkey_compiler.symbol_table import SymbolTable, GlobalScope
 from monkey_object import object
 
 
@@ -150,12 +150,18 @@ class Compiler:
             if err is not None:
                 return err
             symbol = self.symbol_table.define(node.name.value)
-            self.emit(code.OpSetGlobal, symbol.index)
+            if symbol.scope == GlobalScope:
+                self.emit(code.OpSetGlobal, symbol.index)
+            else:
+                self.emit(code.OpSetLocal, symbol.index)
         elif isinstance(node, ast.Identifier):
             symbol, ok = self.symbol_table.resolve(node.value)
             if not ok:
                 return f"undefined variable: {node.value}"
-            self.emit(code.OpGetGlobal, symbol.index)
+            if symbol.scope == GlobalScope:
+                self.emit(code.OpGetGlobal, symbol.index)
+            else:
+                self.emit(code.OpGetLocal, symbol.index)
         elif isinstance(node, ast.StringLiteral):
             s = object.String(node.value)
             self.emit(code.OpConstant, self.add_constant(s))
@@ -193,8 +199,11 @@ class Compiler:
                 self.replace_last_pop_with_return()
             if not self.last_instruction_is(code.OpReturnValue):
                 self.emit(code.OpReturn)
+            num_locals = self.symbol_table.num_definitions
             instructions = self.leave_scope()
-            compiled_function = object.CompiledFunction(instructions=instructions)
+            compiled_function = object.CompiledFunction(
+                instructions=instructions,
+                num_locals=num_locals)
             self.emit(code.OpConstant, self.add_constant(compiled_function))
         elif isinstance(node, ast.ReturnStatement):
             err = self.compile(node.return_value)
@@ -269,10 +278,12 @@ class Compiler:
         scope = CompilationScope(instructions=code.Instructions(),
                                  last_instruction=EmittedInstruction(),
                                  previous_instruction=EmittedInstruction())
+        self.symbol_table = SymbolTable.new_enclosed(self.symbol_table)
         self.scopes.append(scope)
         self.scope_index += 1
 
     def leave_scope(self):
+        self.symbol_table = self.symbol_table.outer
         instructions = self.current_instructions()
         self.scopes = self.scopes[: len(self.scopes) - 1]
         self.scope_index -= 1

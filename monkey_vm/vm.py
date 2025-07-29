@@ -31,7 +31,8 @@ class VM:
         self.globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
         self.frame_index = 1
         self.frames = cast(List[frame.Frame], [None] * MAX_FRAMES)
-        self.frames[0] = frame.Frame(fn=object.CompiledFunction(instructions=bytecode.instructions))
+        self.frames[0] = frame.Frame(fn=object.CompiledFunction(instructions=bytecode.instructions),
+                                     base_pointer=0)
 
     @staticmethod
     def new_with_global_state(bytecode: compiler.Bytecode, s: List[object.Object]):
@@ -144,24 +145,37 @@ class VM:
                 fn = self.stack[self.sp - 1]
                 if not isinstance(fn, object.CompiledFunction):
                     return f"calling non-function"
-                frm = frame.Frame(fn=fn)
+                frm = frame.Frame(fn=fn, base_pointer=self.sp)
                 self.push_frame(frm)
+                self.sp = frm.base_pointer + fn.num_locals
             elif op == code.OpReturnValue:
                 return_value = self.pop()
-                self.pop_frame()
-                self.pop()
+                frm = self.pop_frame()
+                self.sp = frm.base_pointer - 1
                 err = self.push(return_value)
                 if err is not None:
                     return err
             elif op == code.OpReturn:
-                self.pop_frame()
-                self.pop()
+                frm = self.pop_frame()
+                self.sp = frm.base_pointer - 1
                 err = self.push(object.NULL)
+                if err is not None:
+                    return err
+            elif op == code.OpSetLocal:
+                local_index = code.read_uint8(ins[ip+1:])
+                self.current_frame().ip += 1
+                frm = self.current_frame()
+                self.stack[frm.base_pointer + int(local_index)] = self.pop()
+            elif op == code.OpGetLocal:
+                local_index = code.read_uint8(ins[ip + 1:])
+                self.current_frame().ip += 1
+                frm = self.current_frame()
+                err = self.push(self.stack[frm.base_pointer + int(local_index)])
                 if err is not None:
                     return err
             else:
                 return f"unknown operator: {definition.name}"
-            ip += 1
+
         return None
 
     def build_array(self, start_idx, end_idx):

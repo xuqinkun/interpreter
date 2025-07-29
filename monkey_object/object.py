@@ -293,7 +293,8 @@ class Macro(Object):
 
 @dataclass
 class CompiledFunction(Object):
-    instructions: code.Instructions
+    instructions: code.Instructions = None
+    num_locals: int = 0
 
     def type(self) -> str:
         return COMPILED_FUNCTION_OBJ

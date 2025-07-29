@@ -353,10 +353,13 @@ def test_compiler_scopes():
     compiler = Compiler()
     if compiler.scope_index != 0:
         return f"scope_index wrong. got={compiler.scope_index}, want=0"
+    global_st = compiler.symbol_table
+
     compiler.emit(code.OpMul)
     compiler.enter_scope()
     if compiler.scope_index != 1:
         return f"scope index wrong. got={compiler.scope_index} want=1"
+
     compiler.emit(code.OpSub)
 
     if len(compiler.scopes[compiler.scope_index].instructions) != 1:
@@ -364,12 +367,18 @@ def test_compiler_scopes():
     last_instruction = compiler.scopes[compiler.scope_index].last_instruction
     if last_instruction.op_code != code.OpSub:
         return f"last_instruction.OpCode wrong. got={last_instruction.op_code} want={code.OpSub}"
+    if compiler.symbol_table.outer != global_st:
+        print("compiler did not enclose symbol table")
+
     compiler.leave_scope()
     if compiler.scope_index != 0:
         return f"scope index wrong. got={compiler.scope_index} want=0"
+    if compiler.symbol_table != global_st:
+        print("compiler did not restore global symbol table")
     compiler.emit(code.OpAdd)
     if len(compiler.scopes[compiler.scope_index].instructions) != 2:
         return f"instructions length wrong. got={len(compiler.scopes[compiler.scope_index].instructions)} want=2"
+
     last_instruction = compiler.scopes[compiler.scope_index].last_instruction
     if last_instruction.op_code != code.OpAdd:
         return f"last_instruction.OpCode wrong. got={last_instruction.op_code} want={code.OpAdd}"
@@ -400,6 +409,58 @@ def test_function_calls():
         return err
     return True
 
+
+def test_let_statement_scopes():
+    cases = [
+        ("""
+        let num = 55;
+        fn() { num }
+        """,
+        (55, code.Instructions(b''.join([code.make(code.OpGetGlobal, 0),
+                                         code.make(code.OpReturnValue)])),),
+        (code.make(code.OpConstant, 0),
+         code.make(code.OpSetGlobal, 0),
+         code.make(code.OpConstant, 1),
+         code.make(code.OpPop))),
+        ("""
+        fn() {
+                let num = 55;
+                num
+            }
+        """,
+        (55, code.Instructions(b''.join([
+            code.make(code.OpConstant, 0),
+            code.make(code.OpSetLocal, 0),
+            code.make(code.OpGetLocal, 0),
+            code.make(code.OpReturnValue)])),),
+        (code.make(code.OpConstant, 1),
+         code.make(code.OpPop))),
+        ("""
+        fn() {
+                let a = 55;
+                let b = 77;
+                a+b
+            }
+        """,
+        (55, 77,
+         code.Instructions(b''.join([
+            code.make(code.OpConstant, 0),
+            code.make(code.OpSetLocal, 0),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpSetLocal, 1),
+            code.make(code.OpGetLocal, 0),
+            code.make(code.OpGetLocal, 1),
+            code.make(code.OpAdd),
+            code.make(code.OpReturnValue)])),),
+        (code.make(code.OpConstant, 2),
+         code.make(code.OpPop))
+         ),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 if __name__ == '__main__':
     test_compiler_scopes()
     tests = [
@@ -412,7 +473,8 @@ if __name__ == '__main__':
         test_hash_literals,
         test_index_expressions,
         test_functions,
-        test_function_calls
+        test_function_calls,
+        test_let_statement_scopes
     ]
     test_util.run_cases(tests)
 

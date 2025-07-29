@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 GlobalScope = "GLOBAL"
+LocalScope = "LOCAL"
 
 @dataclass
 class Symbol:
@@ -13,16 +14,31 @@ class Symbol:
 class SymbolTable:
     store: Dict[str, Symbol]
     num_definitions: int
+    outer: Optional["SymbolTable"]
 
     def __init__(self):
         self.store = {}
         self.num_definitions = 0
+        self.outer = None
 
     def define(self, name):
         symbol = Symbol(name=name, index=self.num_definitions, scope=GlobalScope)
+        if self.outer is None:
+            symbol.scope = GlobalScope
+        else:
+            symbol.scope = LocalScope
         self.store[name] = symbol
         self.num_definitions += 1
         return symbol
 
     def resolve(self, name):
-        return self.store.get(name, None), name in self.store
+        obj = self.store.get(name, None)
+        if obj is None and self.outer is not None:
+            return self.outer.resolve(name)
+        return obj, name in self.store
+
+    @staticmethod
+    def new_enclosed(outer: Optional["SymbolTable"]):
+        s = SymbolTable()
+        s.outer = outer
+        return s

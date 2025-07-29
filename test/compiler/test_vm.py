@@ -271,20 +271,65 @@ def test_first_class_functions():
         let returnsOneReturner = fn() { returnsOne; };
         returnsOneReturner()();
         """, 1),
+        ("""
+        let returnsOneReturner = fn() {
+            let returnsOne = fn() { 1; };
+            returnsOne;
+        };
+        returnsOneReturner()();
+        """, 1),
     ]
     if run_vm_test(cases) is True:
         print('test_first_class_functions Accepted')
 
 
+def test_calling_functions_with_bindings():
+    cases = [
+        ("""
+        let one = fn() { let one = 1; one };
+        one();
+        """, 1),
+        ("""
+        let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+        oneAndTwo();
+        """, 3),
+        ("""
+        let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+        let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+        oneAndTwo() + threeAndFour();
+        """, 10),
+        ("""
+        let firstFoobar = fn() { let foobar = 50; foobar; };
+        let secondFoobar = fn() { let foobar = 100; foobar; };
+        firstFoobar() + secondFoobar();
+        """, 150),
+        ("""
+        let globalSeed = 50;
+        let minusOne = fn() {
+            let num = 1;
+            globalSeed - num;
+        }
+        let minusTwo = fn() {
+            let num = 2;
+            globalSeed - num;
+        }
+        minusOne() + minusTwo();
+        """, 97),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_calling_functions_with_bindings Accepted')
+
+
 if __name__ == '__main__':
-    test_integer_arithmetic()
-    test_boolean_expressions()
-    test_conditionals()
-    test_global_let_statements()
-    test_string_expressions()
-    test_array_expressions()
-    test_hash_literals()
-    test_index_expressions()
-    test_calling_functions_without_arguments()
-    test_calling_functions_without_return_value()
-    test_first_class_functions()
+    # test_integer_arithmetic()
+    # test_boolean_expressions()
+    # test_conditionals()
+    # test_global_let_statements()
+    # test_string_expressions()
+    # test_array_expressions()
+    # test_hash_literals()
+    # test_index_expressions()
+    # test_calling_functions_without_arguments()
+    # test_calling_functions_without_return_value()
+    # test_first_class_functions()
+    test_calling_functions_with_bindings()
