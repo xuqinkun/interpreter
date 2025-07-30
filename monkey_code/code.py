@@ -60,7 +60,7 @@ definitions: Dict[Opcode, Definition] = {
     OpArray: Definition(name="OpArray", operand_widths=[2]),
     OpHash: Definition(name="OpHash", operand_widths=[2]),
     OpIndex: Definition(name="OpIndex", operand_widths=[]),
-    OpCall: Definition(name="OpCall", operand_widths=[]),
+    OpCall: Definition(name="OpCall", operand_widths=[1]),
     OpReturnValue: Definition(name="OpReturnValue", operand_widths=[]),
     OpReturn: Definition(name="OpReturn", operand_widths=[]),
     OpGetLocal: Definition(name="OpGetLocal", operand_widths=[1]),

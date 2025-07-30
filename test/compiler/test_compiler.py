@@ -393,7 +393,7 @@ def test_function_calls():
         ("fn() {24}();", (24, code.Instructions(b''.join([code.make(code.OpConstant, 0),
                                               code.make(code.OpReturnValue)])),),
          (code.make(code.OpConstant, 1),
-          code.make(code.OpCall),
+          code.make(code.OpCall, 0),
           code.make(code.OpPop))),
         ("let noArg = fn() {24}; noArg();", (24, code.Instructions(b''.join([
                                               code.make(code.OpConstant, 0),
@@ -401,8 +401,39 @@ def test_function_calls():
          (code.make(code.OpConstant, 1),
           code.make(code.OpSetGlobal, 0),
           code.make(code.OpGetGlobal, 0),
-          code.make(code.OpCall),
+          code.make(code.OpCall, 0),
           code.make(code.OpPop))),
+        ("""
+        let oneArg = fn(a) { };
+            oneArg(24);
+        """,
+         (code.Instructions(b''.join([code.make(code.OpReturn)])),24),
+             (
+              code.make(code.OpConstant, 0),
+              code.make(code.OpSetGlobal, 0),
+              code.make(code.OpGetGlobal, 0),
+              code.make(code.OpConstant, 1),
+              code.make(code.OpCall, 1),
+              code.make(code.OpPop)
+             )
+         ),
+        ("""
+        let manyArg = fn(a, b, c) { };
+            manyArg(24, 25, 26);
+        """,
+         (code.Instructions(b''.join([code.make(code.OpReturn)])),24, 25, 26),
+             (
+              code.make(code.OpConstant, 0),
+              code.make(code.OpSetGlobal, 0),
+              code.make(code.OpGetGlobal, 0),
+              code.make(code.OpConstant, 1),
+              code.make(code.OpConstant, 2),
+              code.make(code.OpConstant, 3),
+              code.make(code.OpCall, 3),
+              code.make(code.OpPop)
+             )
+         ),
+
     ]
     err = run_compiler_tests(cases)
     if err is not None:

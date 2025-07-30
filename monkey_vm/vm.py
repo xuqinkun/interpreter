@@ -149,6 +149,7 @@ class VM:
                 空缺的上方是函数的工作区，
                 它会将函数执行时需要的值压栈和弹栈。
                 """
+                self.current_frame().ip += 1
                 fn = self.stack[self.sp - 1]
                 if not isinstance(fn, object.CompiledFunction):
                     return f"calling non-function"

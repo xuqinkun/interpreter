@@ -214,7 +214,11 @@ class Compiler:
             err = self.compile(node.function)
             if err is not None:
                 return err
-            self.emit(code.OpCall)
+            for a in node.arguments:
+                err = self.compile(a)
+                if err is not None:
+                    return err
+            self.emit(code.OpCall, len(node.arguments))
         return None
 
     def last_instruction_is(self, op: code.Opcode):
