@@ -142,12 +142,33 @@ class VM:
                 if err is not None:
                     return err
             elif op == code.OpCall:
+                """
+                在增加栈指针时，并没有往栈中推送任何值，
+                由此导致栈中产生了一块没有任何值的区域。
+                空缺的下方是函数调用之前压栈的所有值。
+                空缺的上方是函数的工作区，
+                它会将函数执行时需要的值压栈和弹栈。
+                """
                 fn = self.stack[self.sp - 1]
                 if not isinstance(fn, object.CompiledFunction):
                     return f"calling non-function"
                 frm = frame.Frame(fn=fn, base_pointer=self.sp)
                 self.push_frame(frm)
+                # 栈中的空缺处就是要存储局部绑定的地方。
+                # 执行函数之前栈指针的值，这是空缺的下边界
                 self.sp = frm.base_pointer + fn.num_locals
+            elif op == code.OpSetLocal:
+                local_index = code.read_uint8(ins[ip+1:])
+                self.current_frame().ip += 1
+                frm = self.current_frame()
+                self.stack[frm.base_pointer + int(local_index)] = self.pop()
+            elif op == code.OpGetLocal:
+                local_index = code.read_uint8(ins[ip + 1:])
+                self.current_frame().ip += 1
+                frm = self.current_frame()
+                err = self.push(self.stack[frm.base_pointer + int(local_index)])
+                if err is not None:
+                    return err
             elif op == code.OpReturnValue:
                 return_value = self.pop()
                 frm = self.pop_frame()
@@ -159,18 +180,6 @@ class VM:
                 frm = self.pop_frame()
                 self.sp = frm.base_pointer - 1
                 err = self.push(object.NULL)
-                if err is not None:
-                    return err
-            elif op == code.OpSetLocal:
-                local_index = code.read_uint8(ins[ip+1:])
-                self.current_frame().ip += 1
-                frm = self.current_frame()
-                self.stack[frm.base_pointer + int(local_index)] = self.pop()
-            elif op == code.OpGetLocal:
-                local_index = code.read_uint8(ins[ip + 1:])
-                self.current_frame().ip += 1
-                frm = self.current_frame()
-                err = self.push(self.stack[frm.base_pointer + int(local_index)])
                 if err is not None:
                     return err
             else:
