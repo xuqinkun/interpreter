@@ -404,10 +404,12 @@ def test_function_calls():
           code.make(code.OpCall, 0),
           code.make(code.OpPop))),
         ("""
-        let oneArg = fn(a) { };
+        let oneArg = fn(a) { a;};
             oneArg(24);
         """,
-         (code.Instructions(b''.join([code.make(code.OpReturn)])),24),
+         (code.Instructions(b''.join([
+             code.make(code.OpGetLocal, 0),
+             code.make(code.OpReturnValue)])),24),
              (
               code.make(code.OpConstant, 0),
               code.make(code.OpSetGlobal, 0),
@@ -418,10 +420,17 @@ def test_function_calls():
              )
          ),
         ("""
-        let manyArg = fn(a, b, c) { };
+        let manyArg = fn(a, b, c) {a;b;c;};
             manyArg(24, 25, 26);
         """,
-         (code.Instructions(b''.join([code.make(code.OpReturn)])),24, 25, 26),
+         (code.Instructions(b''.join([
+             code.make(code.OpGetLocal, 0),
+             code.make(code.OpPop),
+             code.make(code.OpGetLocal, 1),
+             code.make(code.OpPop),
+             code.make(code.OpGetLocal, 2),
+             code.make(code.OpReturnValue)
+            ])),24, 25, 26),
              (
               code.make(code.OpConstant, 0),
               code.make(code.OpSetGlobal, 0),

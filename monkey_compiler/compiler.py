@@ -192,6 +192,8 @@ class Compiler:
             self.emit(code.OpIndex)
         elif isinstance(node, ast.FunctionLiteral):
             self.enter_scope()
+            for p in node.parameters:
+                self.symbol_table.define(p.value)
             err = self.compile(node.body)
             if err is not None:
                 return err

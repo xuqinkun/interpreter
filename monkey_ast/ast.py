@@ -312,7 +312,7 @@ class BlockStatement(Statement):
         lines = []
         for stmt in self.statements:
             lines.append(stmt.string())
-        return "".join(lines)
+        return ";".join(lines)
 
     def __repr__(self):
         return self.string()
