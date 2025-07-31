@@ -12,18 +12,32 @@ class Bytecode:
     instructions: code.Instructions = b''
     constants: List[object.Object] = None
 
+    def __init__(self, instructions: code.Instructions, constants: List[object.Object]):
+        self.instructions = instructions
+        self.constants = constants
+
 
 @dataclass()
 class EmittedInstruction:
     op_code: code.Opcode = 0
     pos: int = 0
 
+    def __init__(self, op_code: code.Opcode, pos: int):
+        self.op_code = op_code
+        self.pos = pos
 
-@dataclass
+
+@dataclass()
 class CompilationScope:
-    instructions: code.Instructions = b''
-    last_instruction: EmittedInstruction=None
-    previous_instruction: EmittedInstruction=None
+    instructions: code.Instructions
+    last_instruction: EmittedInstruction
+    previous_instruction: EmittedInstruction
+
+    def __init__(self, instructions: code.Instructions, last_instruction: EmittedInstruction,
+                 previous_instruction: EmittedInstruction):
+        self.instructions = instructions
+        self.last_instruction = last_instruction
+        self.previous_instruction = previous_instruction
 
 @dataclass()
 class Compiler:
@@ -38,14 +52,15 @@ class Compiler:
     def __init__(self):
         self.instructions = code.Instructions()
         self.constants = []
-        self.last_instruction = EmittedInstruction()
-        self.previous_instruction = EmittedInstruction()
+        self.last_instruction = EmittedInstruction(op_code=0, pos=0)
+        self.previous_instruction = EmittedInstruction(op_code=0, pos=0)
         self.symbol_table = SymbolTable()
         for i, fn in enumerate(builtins.builtins):
-            self.symbol_table.define_builtin(i, fn)
-        self.scopes = [CompilationScope(instructions=code.Instructions(),
-                                        last_instruction=EmittedInstruction(),
-                                        previous_instruction=EmittedInstruction())]
+            self.symbol_table.define_builtin(i, fn[0])
+        scope = CompilationScope(instructions=code.Instructions(),
+                         last_instruction=EmittedInstruction(op_code=0, pos=0),
+                         previous_instruction=EmittedInstruction(op_code=0, pos=0))
+        self.scopes = [scope]
         self.scope_index = 0
 
     @staticmethod
@@ -288,8 +303,8 @@ class Compiler:
 
     def enter_scope(self):
         scope = CompilationScope(instructions=code.Instructions(),
-                                 last_instruction=EmittedInstruction(),
-                                 previous_instruction=EmittedInstruction())
+                                 last_instruction=EmittedInstruction(op_code=0, pos=0),
+                                 previous_instruction=EmittedInstruction(op_code=0, pos=0))
         self.symbol_table = SymbolTable.new_enclosed(self.symbol_table)
         self.scopes.append(scope)
         self.scope_index += 1

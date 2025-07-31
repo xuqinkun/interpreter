@@ -2,9 +2,9 @@
 import sys
 from typing import List, cast
 
-from monkey_object import object
 from monkey_compiler import compiler
 from monkey_compiler.symbol_table import SymbolTable
+from monkey_object import object, builtins
 from monkey_parser.parser import parse
 from monkey_vm import vm
 from monkey_vm.vm import GLOBAL_SIZE
@@ -21,15 +21,16 @@ def match_eof(code: str):
 
 def run():
     constants = []
-    globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
+    global_variables = cast(List[object.Object], [None] * GLOBAL_SIZE)
     symbol_table = SymbolTable()
+    for i, v in enumerate(builtins.builtins):
+        symbol_table.define_builtin(i, v[0])
     while True:
         code = input(PROMPT)
         if match_eof(code):
             break
         if code:
             program = parse(code)
-
             comp = compiler.Compiler.new_with_state(symbol_table, constants)
             err = comp.compile(program)
             if err is not None:
@@ -37,7 +38,7 @@ def run():
                 continue
             code = comp.bytecode()
             constants = code.constants
-            machine = vm.VM.new_with_global_state(code, globals)
+            machine = vm.VM.new_with_global_state(code, global_variables)
             err = machine.run()
             if err is not None:
                 print(f"Woops! Execution bytecode failed: \n {err} \n")

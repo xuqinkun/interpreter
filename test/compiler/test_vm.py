@@ -83,6 +83,11 @@ def test_expected_object(expected, actual: object.Object):
             err = test_integer_object(v, pair.value)
             if err is not None:
                 print(f"test_integer_object failed: {err}")
+    elif exp_type == object.Error:
+        if not isinstance(actual, object.Error):
+            return f"object is not error: {type(actual)} {actual}"
+        if actual.message != expected.message:
+            print(f"wrong error message. expected={expected.message} got={actual.message}")
     return f"type not supported: {exp_type}"
 
 
@@ -394,6 +399,33 @@ def test_calling_functions_with_wrong_arguments():
             print(f"wrong VM error: want={expected}, got={err}")
 
 
+def test_builtin_functions():
+    cases = [
+        ('len("")', 0),
+        ('len("four")', 4),
+        ('len("hello world")', 11),
+        ('len(1)', object.Error(message="argument to 'len' not supported, got INTEGER")),
+        ('len("one", "two")', object.Error(message="wrong number of arguments. got=2, want=1")),
+        ('len([1, 2, 3])', 3),
+        ('len([])', 0),
+        ('puts("hello", "world!")', object.NULL),
+        ('first([1, 2, 3])', 1),
+        ('first([])', object.NULL),
+        ('first(1)', object.Error(message="argument to 'first' must be ARRAY, got INTEGER")),
+        ('last([1, 2, 3])', 3),
+        ('last([])', object.NULL),
+        ('last(1)', object.Error(message="argument to 'last' must be ARRAY, got INTEGER")),
+        ('rest([1, 2, 3])', [2,3]),
+        ('rest([])', object.NULL),
+        ('push([], 1)', [1]),
+        ('push(1, 1)', object.Error(message="argument to 'push' must be ARRAY, got INTEGER")),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_builtin_functions accepted')
+    else:
+        print('test_builtin_functions failed')
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
@@ -409,3 +441,4 @@ if __name__ == '__main__':
     test_calling_functions_with_bindings()
     test_calling_functions_with_arguments_and_bindings()
     test_calling_functions_with_wrong_arguments()
+    test_builtin_functions()

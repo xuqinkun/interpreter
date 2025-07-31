@@ -3,7 +3,7 @@ from typing import List, cast
 
 from monkey_code import code
 from monkey_compiler import compiler
-from monkey_object import object
+from monkey_object import object, builtins
 from monkey_vm import frame
 
 STACK_SIZE = 2048
@@ -19,7 +19,7 @@ class VM:
     constants: List[object.Object]
     stack: List[object.Object]
     sp: int
-    globals: List[object.Object]
+    global_variables: List[object.Object]
     frames: List[frame.Frame]
     frame_index: int
 
@@ -28,7 +28,7 @@ class VM:
         self.constants = bytecode.constants
         self.stack = cast(List[object.Object], [None] * STACK_SIZE)
         self.sp = 0
-        self.globals = cast(List[object.Object], [None] * GLOBAL_SIZE)
+        self.global_variables = cast(List[object.Object], [None] * GLOBAL_SIZE)
         self.frame_index = 1
         self.frames = cast(List[frame.Frame], [None] * MAX_FRAMES)
         self.frames[0] = frame.Frame(fn=object.CompiledFunction(instructions=bytecode.instructions),
@@ -37,7 +37,7 @@ class VM:
     @staticmethod
     def new_with_global_state(bytecode: compiler.Bytecode, s: List[object.Object]):
         vm = VM(bytecode)
-        vm.globals = s
+        vm.global_variables = s
         return vm
 
     def peek(self):
@@ -111,17 +111,18 @@ class VM:
             elif op == code.OpSetGlobal:
                 global_index = code.read_uint16(ins[ip + 1:])
                 self.current_frame().ip += 2
-                self.globals[global_index] = self.pop()
+                self.global_variables[global_index] = self.pop()
             elif op == code.OpGetGlobal:
                 global_index = code.read_uint16(ins[ip + 1:])
                 self.current_frame().ip += 2
-                err = self.push(self.globals[global_index])
+                err = self.push(self.global_variables[global_index])
                 if err is not None:
                     return err
             elif op == code.OpArray:
                 num_elements = int(code.read_uint16(ins[ip + 1:]))
                 self.current_frame().ip += 2
                 array = self.build_array(self.sp - num_elements, self.sp)
+                self.sp = self.sp - num_elements
                 err = self.push(array)
                 if err is not None:
                     return err
@@ -151,16 +152,9 @@ class VM:
                 """
                 num_args = code.read_uint8(ins[ip+1:])
                 self.current_frame().ip += 1
-                fn = self.stack[self.sp - 1 - num_args]
-                if not isinstance(fn, object.CompiledFunction):
-                    return "calling non-function"
-                if num_args != fn.num_parameters:
-                    return f"wrong number of arguments: want={fn.num_parameters}, got={num_args}"
-                frm = frame.Frame(fn=fn, base_pointer=self.sp - num_args)
-                self.push_frame(frm)
-                # 栈中的空缺处就是要存储局部绑定的地方。
-                # 执行函数之前栈指针的值，这是空缺的下边界
-                self.sp = frm.base_pointer + fn.num_locals
+                err = self.execute_call(num_args)
+                if err is not None:
+                    return err
             elif op == code.OpSetLocal:
                 local_index = code.read_uint8(ins[ip+1:])
                 self.current_frame().ip += 1
@@ -186,9 +180,45 @@ class VM:
                 err = self.push(object.NULL)
                 if err is not None:
                     return err
+            elif op == code.OpGetBuiltin:
+                builtin_index = code.read_uint8(ins[ip+1: ])
+                self.current_frame().ip += 1
+                definition = builtins.builtins[builtin_index]
+                err = self.push(definition[1])
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
 
+        return None
+
+    def execute_call(self, num_args: int):
+        fn = self.stack[self.sp - 1 - num_args]
+        if isinstance(fn, object.CompiledFunction):
+            return self.call_function(fn, num_args)
+        elif isinstance(fn, object.Builtin):
+            return self.call_builtin(fn, num_args)
+        else:
+            return f"calling non-function and non-built-in"
+
+    def call_function(self, fn: object.CompiledFunction, num_args: int):
+        if num_args != fn.num_parameters:
+            return f"wrong number of arguments: want={fn.num_parameters}, got={num_args}"
+        frm = frame.Frame(fn=fn, base_pointer=self.sp - num_args)
+        self.push_frame(frm)
+        # 栈中的空缺处就是要存储局部绑定的地方。
+        # 执行函数之前栈指针的值，这是空缺的下边界
+        self.sp = frm.base_pointer + fn.num_locals
+        return None
+
+    def call_builtin(self, builtin: object.Builtin, num_args: int):
+        args = self.stack[self.sp - num_args: self.sp]
+        result = builtin.fn(*args)
+        self.sp = self.sp - num_args - 1
+        if result is not None:
+            self.push(result)
+        else:
+            self.push(object.NULL)
         return None
 
     def build_array(self, start_idx, end_idx):
