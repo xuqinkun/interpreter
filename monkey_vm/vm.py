@@ -149,11 +149,14 @@ class VM:
                 空缺的上方是函数的工作区，
                 它会将函数执行时需要的值压栈和弹栈。
                 """
+                num_args = code.read_uint8(ins[ip+1:])
                 self.current_frame().ip += 1
-                fn = self.stack[self.sp - 1]
+                fn = self.stack[self.sp - 1 - num_args]
                 if not isinstance(fn, object.CompiledFunction):
-                    return f"calling non-function"
-                frm = frame.Frame(fn=fn, base_pointer=self.sp)
+                    return "calling non-function"
+                if num_args != fn.num_parameters:
+                    return f"wrong number of arguments: want={fn.num_parameters}, got={num_args}"
+                frm = frame.Frame(fn=fn, base_pointer=self.sp - num_args)
                 self.push_frame(frm)
                 # 栈中的空缺处就是要存储局部绑定的地方。
                 # 执行函数之前栈指针的值，这是空缺的下边界

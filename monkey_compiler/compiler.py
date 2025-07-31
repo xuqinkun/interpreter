@@ -205,7 +205,9 @@ class Compiler:
             instructions = self.leave_scope()
             compiled_function = object.CompiledFunction(
                 instructions=instructions,
-                num_locals=num_locals)
+                num_locals=num_locals,
+                num_parameters=len(node.parameters)
+            )
             self.emit(code.OpConstant, self.add_constant(compiled_function))
         elif isinstance(node, ast.ReturnStatement):
             err = self.compile(node.return_value)

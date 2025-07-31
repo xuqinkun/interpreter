@@ -295,6 +295,7 @@ class Macro(Object):
 class CompiledFunction(Object):
     instructions: code.Instructions = None
     num_locals: int = 0
+    num_parameters: int = 0
 
     def type(self) -> str:
         return COMPILED_FUNCTION_OBJ

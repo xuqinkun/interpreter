@@ -320,6 +320,80 @@ def test_calling_functions_with_bindings():
         print('test_calling_functions_with_bindings Accepted')
 
 
+def test_calling_functions_with_arguments_and_bindings():
+    cases = [
+        ("""
+        let identity = fn(a) { a; };
+        identity(4);
+        """, 4),
+        ("""
+        let sum = fn(a, b) { a + b; };
+        sum(1, 2);
+        """, 3),
+        ("""
+        let sum = fn(a, b) {
+            let c = a + b;
+            c;
+        };
+        sum(1, 2);
+        """, 3),
+        ("""
+        let sum = fn(a, b) {
+            let c = a + b;
+            c;
+        };
+        sum(1, 2) + sum(3, 4);
+        """, 10),
+        ("""
+        let sum = fn(a, b) {
+            let c = a + b;
+            c;
+        };
+        let outer = fn() {
+            sum(1, 2) + sum(3, 4);
+        };
+        outer();
+        """, 10),
+        ("""
+        let globalNum = 10;
+
+        let sum = fn(a, b) {
+            let c = a + b;
+            c + globalNum;
+        };
+
+        let outer = fn() {
+            sum(1, 2) + sum(3, 4) + globalNum;
+        };
+
+        outer() + globalNum;
+        """, 50),
+    ]
+    if run_vm_test(cases) is True:
+        print('test_calling_functions_with_arguments_and_bindings accepted')
+
+
+def test_calling_functions_with_wrong_arguments():
+    cases = [
+        ("fn() { 1; }(1);", "wrong number of arguments: want=0, got=1"),
+        ("fn(a) { a; }();", "wrong number of arguments: want=1, got=0"),
+        ("fn(a, b) { a + b; }(1);", "wrong number of arguments: want=2, got=1"),
+    ]
+
+    for code, expected in cases:
+        program = parser.parse(code)
+        comp = Compiler()
+        err = comp.compile(program)
+        if err is not None:
+            return f"compiler error: {err}"
+        vm = VM(comp.bytecode())
+        err = vm.run()
+        if err is None:
+            print("expected VM error but resulted in none.")
+        if err != expected:
+            print(f"wrong VM error: want={expected}, got={err}")
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
@@ -333,3 +407,5 @@ if __name__ == '__main__':
     test_calling_functions_without_return_value()
     test_first_class_functions()
     test_calling_functions_with_bindings()
+    test_calling_functions_with_arguments_and_bindings()
+    test_calling_functions_with_wrong_arguments()
