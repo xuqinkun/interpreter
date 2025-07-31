@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Callable
+from typing import Dict, Callable, List
 from monkey_code import code
 from monkey_ast import ast
 
@@ -18,6 +18,7 @@ HASH_OBJ = "HASH"
 QUOTE_OBJ = "QUOTE"
 MACRO_OBJ = "MACRO"
 COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION_OBJ"
+CLOSURE_OBJ = "CLOSURE"
 
 
 @dataclass
@@ -302,3 +303,15 @@ class CompiledFunction(Object):
 
     def inspect(self) -> str:
         return f"CompiledFunction {self}"
+
+
+@dataclass
+class Closure(Object):
+    fn: CompiledFunction
+    free: List[Object]
+
+    def type(self) -> str:
+        return CLOSURE_OBJ
+
+    def inspect(self) -> str:
+        return f"Closure {self}"

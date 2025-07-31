@@ -329,19 +329,19 @@ def test_functions():
                                         code.make(code.OpConstant, 1),
                                         code.make(code.OpAdd),
                                         code.make(code.OpReturnValue)]))),
-         (code.make(code.OpConstant, 2), code.make(code.OpPop))),
+         (code.make(code.OpClosure, 2, 0), code.make(code.OpPop))),
         ("fn() {5+10}", (5, 10, code.Instructions(b''.join([code.make(code.OpConstant, 0),
                                         code.make(code.OpConstant, 1),
                                         code.make(code.OpAdd),
                                         code.make(code.OpReturnValue)]))),
-         (code.make(code.OpConstant, 2), code.make(code.OpPop))),
+         (code.make(code.OpClosure, 2, 0), code.make(code.OpPop))),
         ("fn() {1;2}", (1, 2, code.Instructions(b''.join([code.make(code.OpConstant, 0),
                                         code.make(code.OpPop),
                                         code.make(code.OpConstant, 1),
                                         code.make(code.OpReturnValue)]))),
-         (code.make(code.OpConstant, 2), code.make(code.OpPop))),
+         (code.make(code.OpClosure, 2, 0), code.make(code.OpPop))),
         ("fn() {}", (code.Instructions(b''.join([code.make(code.OpReturn)])),),
-         (code.make(code.OpConstant, 0), code.make(code.OpPop))),
+         (code.make(code.OpClosure, 0, 0), code.make(code.OpPop))),
     ]
     err = run_compiler_tests(cases)
     if err is not None:
@@ -392,13 +392,13 @@ def test_function_calls():
     cases = [
         ("fn() {24}();", (24, code.Instructions(b''.join([code.make(code.OpConstant, 0),
                                               code.make(code.OpReturnValue)])),),
-         (code.make(code.OpConstant, 1),
+         (code.make(code.OpClosure, 1, 0),
           code.make(code.OpCall, 0),
           code.make(code.OpPop))),
         ("let noArg = fn() {24}; noArg();", (24, code.Instructions(b''.join([
                                               code.make(code.OpConstant, 0),
                                               code.make(code.OpReturnValue)])),),
-         (code.make(code.OpConstant, 1),
+         (code.make(code.OpClosure, 1, 0),
           code.make(code.OpSetGlobal, 0),
           code.make(code.OpGetGlobal, 0),
           code.make(code.OpCall, 0),
@@ -411,7 +411,7 @@ def test_function_calls():
              code.make(code.OpGetLocal, 0),
              code.make(code.OpReturnValue)])),24),
              (
-              code.make(code.OpConstant, 0),
+              code.make(code.OpClosure, 0, 0),
               code.make(code.OpSetGlobal, 0),
               code.make(code.OpGetGlobal, 0),
               code.make(code.OpConstant, 1),
@@ -432,7 +432,7 @@ def test_function_calls():
              code.make(code.OpReturnValue)
             ])),24, 25, 26),
              (
-              code.make(code.OpConstant, 0),
+              code.make(code.OpClosure, 0, 0),
               code.make(code.OpSetGlobal, 0),
               code.make(code.OpGetGlobal, 0),
               code.make(code.OpConstant, 1),
@@ -460,7 +460,7 @@ def test_let_statement_scopes():
                                          code.make(code.OpReturnValue)])),),
         (code.make(code.OpConstant, 0),
          code.make(code.OpSetGlobal, 0),
-         code.make(code.OpConstant, 1),
+         code.make(code.OpClosure, 1, 0),
          code.make(code.OpPop))),
         ("""
         fn() {
@@ -473,7 +473,7 @@ def test_let_statement_scopes():
             code.make(code.OpSetLocal, 0),
             code.make(code.OpGetLocal, 0),
             code.make(code.OpReturnValue)])),),
-        (code.make(code.OpConstant, 1),
+        (code.make(code.OpClosure, 1, 0),
          code.make(code.OpPop))),
         ("""
         fn() {
@@ -492,7 +492,7 @@ def test_let_statement_scopes():
             code.make(code.OpGetLocal, 1),
             code.make(code.OpAdd),
             code.make(code.OpReturnValue)])),),
-        (code.make(code.OpConstant, 2),
+        (code.make(code.OpClosure, 2, 0),
          code.make(code.OpPop))
          ),
     ]
@@ -528,7 +528,7 @@ def test_builtins():
              code.make(code.OpReturnValue),
             ])),
           ),
-         (code.make(code.OpConstant, 0),
+         (code.make(code.OpClosure, 0, 0),
           code.make(code.OpPop)
           )
          ),
@@ -537,6 +537,8 @@ def test_builtins():
     if err is not None:
         return err
     return True
+
+
 
 if __name__ == '__main__':
     test_compiler_scopes()

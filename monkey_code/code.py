@@ -32,6 +32,7 @@ OpReturn = 24
 OpGetLocal = 25
 OpSetLocal = 26
 OpGetBuiltin = 27
+OpClosure = 28
 
 
 @dataclass
@@ -67,6 +68,7 @@ definitions: Dict[Opcode, Definition] = {
     OpGetLocal: Definition(name="OpGetLocal", operand_widths=[1]),
     OpSetLocal: Definition(name="OpSetLocal", operand_widths=[1]),
     OpGetBuiltin: Definition(name="OpGetBuiltin", operand_widths=[1]),
+    OpClosure: Definition(name="OpClosure", operand_widths=[2, 1]),
 }
 
 @dataclass
@@ -86,14 +88,15 @@ class Instructions(bytearray):
                 out.write(f"ERROR: {err}\n")
                 continue
             operands, n_bytes = read_operands(define, self[i + 1:])
-            out.write(f"{i:04d} {self.format(define, operands)}\n")
+            out.write(f"{i:04d} {Instructions.format(define, operands)}\n")
             i += (1 + n_bytes)
         return out.getvalue()
 
     def __repr__(self):
         return self.__str__()
 
-    def format(self, define: Definition, operands: List[int]):
+    @staticmethod
+    def format(define: Definition, operands: List[int]):
         operand_count = len(define.operand_widths)
         if len(operands) != operand_count:
             return f"ERROR: operand len {len(operands)} does not match defined {operand_count}\n"
@@ -101,6 +104,8 @@ class Instructions(bytearray):
             return define.name
         elif operand_count == 1:
             return f"{define.name} {operands[0]}"
+        elif operand_count == 2:
+            return f"{define.name} {operands[0]} {operands[1]}"
         return f"ERROR: unhandled operand_count for {define.name}\n"
 
 

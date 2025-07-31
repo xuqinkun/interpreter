@@ -227,7 +227,8 @@ class Compiler:
                 num_locals=num_locals,
                 num_parameters=len(node.parameters)
             )
-            self.emit(code.OpConstant, self.add_constant(compiled_function))
+            fn_index = self.add_constant(compiled_function)
+            self.emit(code.OpClosure, fn_index, 0)
         elif isinstance(node, ast.ReturnStatement):
             err = self.compile(node.return_value)
             if err is not None:
