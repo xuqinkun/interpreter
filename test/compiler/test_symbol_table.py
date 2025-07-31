@@ -97,6 +97,29 @@ def test_resolve_nested_local():
     return True
 
 
+def test_define_resolve_builtins():
+    global_st = SymbolTable()
+    first_local = SymbolTable.new_enclosed(global_st)
+    second_local = SymbolTable.new_enclosed(first_local)
+    expected = [
+        Symbol(name="a", scope=BuiltinScope, index=0),
+        Symbol(name="c", scope=BuiltinScope, index=1),
+        Symbol(name="e", scope=BuiltinScope, index=2),
+        Symbol(name="f", scope=BuiltinScope, index=3),
+    ]
+    for i, symbol in enumerate(expected):
+        global_st.define_builtin(i, symbol.name)
+    for st in [global_st, first_local, second_local]:
+        for symbol in expected:
+            result, ok = st.resolve(symbol.name)
+            if not ok:
+                print(f"name {symbol.name} not resolvable")
+                continue
+            if result != symbol:
+                print(f"expected {symbol.name} to resolve to {symbol}, got={result}")
+    return True
+
+
 if __name__ == '__main__':
     if test_define():
         print("test define passed")
@@ -104,3 +127,5 @@ if __name__ == '__main__':
         print("test_resolve_global passed")
     if test_resolve_nested_local():
         print("test_resolve_global passed")
+    if test_define_resolve_builtins():
+        print("test_define_resolve_builtins passed")

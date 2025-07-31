@@ -3,6 +3,7 @@ from typing import Dict, Optional
 
 GlobalScope = "GLOBAL"
 LocalScope = "LOCAL"
+BuiltinScope = "BUILTIN"
 
 @dataclass
 class Symbol:
@@ -36,6 +37,11 @@ class SymbolTable:
         if obj is None and self.outer is not None:
             return self.outer.resolve(name)
         return obj, name in self.store
+
+    def define_builtin(self, index: int, name: str):
+        symbol = Symbol(name=name, index=index, scope=BuiltinScope)
+        self.store[name] = symbol
+        return symbol
 
     @staticmethod
     def new_enclosed(outer: Optional["SymbolTable"]):

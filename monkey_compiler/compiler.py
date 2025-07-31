@@ -1,9 +1,9 @@
-from dataclasses import dataclass
 from typing import List
 
 from monkey_ast import ast
 from monkey_code import code
-from monkey_compiler.symbol_table import SymbolTable, GlobalScope
+from monkey_compiler.symbol_table import *
+from monkey_object import builtins
 from monkey_object import object
 
 
@@ -41,6 +41,8 @@ class Compiler:
         self.last_instruction = EmittedInstruction()
         self.previous_instruction = EmittedInstruction()
         self.symbol_table = SymbolTable()
+        for i, fn in enumerate(builtins.builtins):
+            self.symbol_table.define_builtin(i, fn)
         self.scopes = [CompilationScope(instructions=code.Instructions(),
                                         last_instruction=EmittedInstruction(),
                                         previous_instruction=EmittedInstruction())]
@@ -160,8 +162,10 @@ class Compiler:
                 return f"undefined variable: {node.value}"
             if symbol.scope == GlobalScope:
                 self.emit(code.OpGetGlobal, symbol.index)
-            else:
+            elif symbol.scope == LocalScope:
                 self.emit(code.OpGetLocal, symbol.index)
+            elif symbol.scope == BuiltinScope:
+                self.emit(code.OpGetBuiltin, symbol.index)
         elif isinstance(node, ast.StringLiteral):
             s = object.String(node.value)
             self.emit(code.OpConstant, self.add_constant(s))

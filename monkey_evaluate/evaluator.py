@@ -60,7 +60,7 @@ def push(*args):
     return Array(new_arr)
 
 
-def push(*args):
+def puts(*args):
     for arg in args:
         print(arg.inspect())
     return NULL
@@ -72,7 +72,7 @@ builtin_obj = {
     "last": Builtin(fn=last),
     "rest": Builtin(fn=rest),
     "push": Builtin(fn=push),
-    "puts": Builtin(fn=push),
+    "puts": Builtin(fn=puts),
 }
 
 

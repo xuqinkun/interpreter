@@ -501,6 +501,43 @@ def test_let_statement_scopes():
         return err
     return True
 
+def test_builtins():
+    cases = [
+        ("""
+        len([]);
+        push([], 1);
+        """,
+         (1,),
+         (code.make(code.OpGetBuiltin, 0),
+         code.make(code.OpArray, 0),
+         code.make(code.OpCall, 1),
+         code.make(code.OpPop),
+         code.make(code.OpGetBuiltin, 5),
+         code.make(code.OpArray, 0),
+         code.make(code.OpConstant, 0),
+         code.make(code.OpCall, 2),
+         code.make(code.OpPop),
+         )),
+        ("""
+        fn() { len([]) }
+        """,
+         (code.Instructions(b''.join([
+             code.make(code.OpGetBuiltin, 0),
+             code.make(code.OpArray, 0),
+             code.make(code.OpCall, 1),
+             code.make(code.OpReturnValue),
+            ])),
+          ),
+         (code.make(code.OpConstant, 0),
+          code.make(code.OpPop)
+          )
+         ),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
 if __name__ == '__main__':
     test_compiler_scopes()
     tests = [
@@ -514,7 +551,8 @@ if __name__ == '__main__':
         test_index_expressions,
         test_functions,
         test_function_calls,
-        test_let_statement_scopes
+        test_let_statement_scopes,
+        test_builtins
     ]
     test_util.run_cases(tests)
 

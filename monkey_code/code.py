@@ -31,6 +31,7 @@ OpReturnValue = 23
 OpReturn = 24
 OpGetLocal = 25
 OpSetLocal = 26
+OpGetBuiltin = 27
 
 
 @dataclass
@@ -65,6 +66,7 @@ definitions: Dict[Opcode, Definition] = {
     OpReturn: Definition(name="OpReturn", operand_widths=[]),
     OpGetLocal: Definition(name="OpGetLocal", operand_widths=[1]),
     OpSetLocal: Definition(name="OpSetLocal", operand_widths=[1]),
+    OpGetBuiltin: Definition(name="OpGetBuiltin", operand_widths=[1]),
 }
 
 @dataclass
