@@ -191,8 +191,16 @@ class VM:
                     return err
             elif op == code.OpClosure:
                 const_index = code.read_uint16(ins[ip+1: ])
+                num_frees = code.read_uint8(ins[ip+3:])
                 self.current_frame().ip += 3
-                err = self.push_closure(const_index)
+                err = self.push_closure(const_index, num_frees)
+                if err is not None:
+                    return err
+            elif op == code.OpGetFree:
+                free_index = code.read_uint8(ins[ip+1:])
+                self.current_frame().ip += 1
+                current_closure = self.current_frame().cl
+                err = self.push(current_closure.free[free_index])
                 if err is not None:
                     return err
             else:
@@ -200,11 +208,15 @@ class VM:
 
         return None
 
-    def push_closure(self, const_index: int):
+    def push_closure(self, const_index: int, num_free: int):
         constant = self.constants[const_index]
         if not isinstance(constant, object.CompiledFunction):
             return f"not a function: {constant}"
-        closure = object.Closure(fn=constant)
+        free = []
+        for i in range(num_free):
+            free.append(self.stack[self.sp - num_free + i])
+        self.sp = self.sp - num_free
+        closure = object.Closure(fn=constant, free=free)
         return self.push(closure)
 
     def execute_call(self, num_args: int):
