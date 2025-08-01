@@ -175,12 +175,7 @@ class Compiler:
             symbol, ok = self.symbol_table.resolve(node.value)
             if not ok:
                 return f"undefined variable: {node.value}"
-            if symbol.scope == GlobalScope:
-                self.emit(code.OpGetGlobal, symbol.index)
-            elif symbol.scope == LocalScope:
-                self.emit(code.OpGetLocal, symbol.index)
-            elif symbol.scope == BuiltinScope:
-                self.emit(code.OpGetBuiltin, symbol.index)
+            self.load_symbol(symbol)
         elif isinstance(node, ast.StringLiteral):
             s = object.String(node.value)
             self.emit(code.OpConstant, self.add_constant(s))
@@ -220,15 +215,18 @@ class Compiler:
                 self.replace_last_pop_with_return()
             if not self.last_instruction_is(code.OpReturnValue):
                 self.emit(code.OpReturn)
+            free_symbols = self.symbol_table.free_symbols
             num_locals = self.symbol_table.num_definitions
             instructions = self.leave_scope()
+            for s in free_symbols:
+                self.load_symbol(s)
             compiled_function = object.CompiledFunction(
                 instructions=instructions,
                 num_locals=num_locals,
                 num_parameters=len(node.parameters)
             )
             fn_index = self.add_constant(compiled_function)
-            self.emit(code.OpClosure, fn_index, 0)
+            self.emit(code.OpClosure, fn_index, len(free_symbols))
         elif isinstance(node, ast.ReturnStatement):
             err = self.compile(node.return_value)
             if err is not None:
@@ -244,6 +242,16 @@ class Compiler:
                     return err
             self.emit(code.OpCall, len(node.arguments))
         return None
+
+    def load_symbol(self, symbol):
+        if symbol.scope == GlobalScope:
+            self.emit(code.OpGetGlobal, symbol.index)
+        elif symbol.scope == LocalScope:
+            self.emit(code.OpGetLocal, symbol.index)
+        elif symbol.scope == BuiltinScope:
+            self.emit(code.OpGetBuiltin, symbol.index)
+        elif symbol.scope == FreeScope:
+            self.emit(code.OpGetFree, symbol.index)
 
     def last_instruction_is(self, op: code.Opcode):
         if len(self.current_instructions()) == 0:

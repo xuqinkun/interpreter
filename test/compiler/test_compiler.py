@@ -1,9 +1,12 @@
 from typing import List, Tuple, Union
+
+from monkey_code.code import OpGetLocal, OpClosure
 from monkey_parser import parser
 from monkey_code import code
 from monkey_compiler.compiler import Compiler
 from monkey_object import object
 from util import test_util
+
 
 def concat_instructions(instructions: Union[List[code.Instructions], bytearray]):
     if isinstance(instructions, (bytearray, bytes)):
@@ -46,6 +49,11 @@ def test_constants(expected: List, actual: List[object.Object]):
             err = test_instructions(constant, actual[i].instructions)
             if err is not None:
                 return f"constant {i}: test_instructions failed: {err}"
+        elif c_type == list:
+            ins = concat_instructions(constant)
+            err = test_instructions(ins, actual[i].instructions)
+            if err is not None:
+                return f"constant {i}: test_instructions failed: {err}"
     return None
 
 
@@ -65,10 +73,11 @@ def run_compiler_tests(cases: List[Tuple]):
             return False, f"test_constants failed: {err}"
     return None
 
+
 def test_integer_arithmetic():
     cases = [
         ("1+2", (1, 2), [code.make(code.OpConstant, 0),
-                        code.make(code.OpConstant, 1),
+                         code.make(code.OpConstant, 1),
                          code.make(code.OpAdd),
                          code.make(code.OpPop)]),
         ("1;2", (1, 2), [code.make(code.OpConstant, 0),
@@ -88,8 +97,8 @@ def test_integer_arithmetic():
                          code.make(code.OpDiv),
                          code.make(code.OpPop)]),
         ("-1", (1,), [code.make(code.OpConstant, 0),
-                         code.make(code.OpMinus),
-                         code.make(code.OpPop)]),
+                      code.make(code.OpMinus),
+                      code.make(code.OpPop)]),
     ]
     err = run_compiler_tests(cases)
     if err is not None:
@@ -104,36 +113,36 @@ def test_boolean_expressions():
         ("!true", (), (code.make(code.OpTrue),
                        code.make(code.OpBang),
                        code.make(code.OpPop))),
-        ("1>2", (1,2), (
-                       code.make(code.OpConstant, 0),
-                       code.make(code.OpConstant, 1),
-                       code.make(code.OpGreaterThan),
-                       code.make(code.OpPop))),
-        ("1<2", (2,1), (
-                       code.make(code.OpConstant, 0),
-                       code.make(code.OpConstant, 1),
-                       code.make(code.OpGreaterThan),
-                       code.make(code.OpPop))),
-        ("1==2", (1,2), (
-                       code.make(code.OpConstant, 0),
-                       code.make(code.OpConstant, 1),
-                       code.make(code.OpEqual),
-                       code.make(code.OpPop))),
-        ("1!=2", (1,2), (
-                       code.make(code.OpConstant, 0),
-                       code.make(code.OpConstant, 1),
-                       code.make(code.OpNotEqual),
-                       code.make(code.OpPop))),
+        ("1>2", (1, 2), (
+            code.make(code.OpConstant, 0),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpGreaterThan),
+            code.make(code.OpPop))),
+        ("1<2", (2, 1), (
+            code.make(code.OpConstant, 0),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpGreaterThan),
+            code.make(code.OpPop))),
+        ("1==2", (1, 2), (
+            code.make(code.OpConstant, 0),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpEqual),
+            code.make(code.OpPop))),
+        ("1!=2", (1, 2), (
+            code.make(code.OpConstant, 0),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpNotEqual),
+            code.make(code.OpPop))),
         ("true==false", (), (
-                       code.make(code.OpTrue),
-                       code.make(code.OpFalse),
-                       code.make(code.OpEqual),
-                       code.make(code.OpPop))),
+            code.make(code.OpTrue),
+            code.make(code.OpFalse),
+            code.make(code.OpEqual),
+            code.make(code.OpPop))),
         ("true!=false", (), (
-                       code.make(code.OpTrue),
-                       code.make(code.OpFalse),
-                       code.make(code.OpNotEqual),
-                       code.make(code.OpPop))),
+            code.make(code.OpTrue),
+            code.make(code.OpFalse),
+            code.make(code.OpNotEqual),
+            code.make(code.OpPop))),
     ]
     err = run_compiler_tests(cases)
     if err is not None:
@@ -144,16 +153,16 @@ def test_boolean_expressions():
 def test_conditionals():
     cases = [
         ('if(true) {10};3333;', (10, 3333), (
-           code.make(code.OpTrue),
-           code.make(code.OpJumpNotTruthy, 10),
-           code.make(code.OpConstant, 0),
-           code.make(code.OpJump, 11),
-           code.make(code.OpNull),
-           code.make(code.OpPop),
-           code.make(code.OpConstant, 1),
-           code.make(code.OpPop)
+            code.make(code.OpTrue),
+            code.make(code.OpJumpNotTruthy, 10),
+            code.make(code.OpConstant, 0),
+            code.make(code.OpJump, 11),
+            code.make(code.OpNull),
+            code.make(code.OpPop),
+            code.make(code.OpConstant, 1),
+            code.make(code.OpPop)
         )),
-        ('if (true) { 10 } else { 20 }; 3333;',  (10, 20, 3333), (
+        ('if (true) { 10 } else { 20 }; 3333;', (10, 20, 3333), (
             code.make(code.OpTrue),
             code.make(code.OpJumpNotTruthy, 10),
             code.make(code.OpConstant, 0),
@@ -163,7 +172,7 @@ def test_conditionals():
             code.make(code.OpConstant, 2),
             code.make(code.OpPop)
         )),
-        ('if (true) { 10 }; 3333;',  (10, 3333), (
+        ('if (true) { 10 }; 3333;', (10, 3333), (
             code.make(code.OpTrue),
             code.make(code.OpJumpNotTruthy, 10),
             code.make(code.OpConstant, 0),
@@ -178,8 +187,9 @@ def test_conditionals():
         return err
     return True
 
+
 def test_global_let_statements():
-    cases = [("let one = 1; let two = 2;", (1,2),
+    cases = [("let one = 1; let two = 2;", (1, 2),
               (code.make(code.OpConstant, 0),
                code.make(code.OpSetGlobal, 0),
                code.make(code.OpConstant, 1),
@@ -236,41 +246,42 @@ def test_string_object(expected: str, actual: object.Object):
 def test_array_literals():
     cases = [
         ("[]", (), (code.make(code.OpArray, 0), code.make(code.OpPop))),
-        ("[1,2,3]", (1,2,3), (code.make(code.OpConstant, 0),
-                              code.make(code.OpConstant, 1),
-                              code.make(code.OpConstant, 2),
-                              code.make(code.OpArray, 3),
-                              code.make(code.OpPop))),
-        ("[1+2,3-4,5*6]", (1,2,3,4,5,6),
-                            (code.make(code.OpConstant, 0),
-                              code.make(code.OpConstant, 1),
-                              code.make(code.OpAdd),
-                              code.make(code.OpConstant, 2),
-                              code.make(code.OpConstant, 3),
-                              code.make(code.OpSub),
-                              code.make(code.OpConstant, 4),
-                              code.make(code.OpConstant, 5),
-                              code.make(code.OpMul),
-                              code.make(code.OpArray, 3),
-                              code.make(code.OpPop))),
-             ]
+        ("[1,2,3]", (1, 2, 3), (code.make(code.OpConstant, 0),
+                                code.make(code.OpConstant, 1),
+                                code.make(code.OpConstant, 2),
+                                code.make(code.OpArray, 3),
+                                code.make(code.OpPop))),
+        ("[1+2,3-4,5*6]", (1, 2, 3, 4, 5, 6),
+         (code.make(code.OpConstant, 0),
+          code.make(code.OpConstant, 1),
+          code.make(code.OpAdd),
+          code.make(code.OpConstant, 2),
+          code.make(code.OpConstant, 3),
+          code.make(code.OpSub),
+          code.make(code.OpConstant, 4),
+          code.make(code.OpConstant, 5),
+          code.make(code.OpMul),
+          code.make(code.OpArray, 3),
+          code.make(code.OpPop))),
+    ]
     err = run_compiler_tests(cases)
     if err is not None:
         return err
     return True
 
+
 def test_hash_literals():
     cases = [
         ("{}", (), (code.make(code.OpHash, 0), code.make(code.OpPop))),
-        ("{1:2, 3:4, 5:6}", (1,2,3,4,5,6), (code.make(code.OpConstant, 0),
-                             code.make(code.OpConstant, 1),
-                             code.make(code.OpConstant, 2),
-                             code.make(code.OpConstant, 3),
-                             code.make(code.OpConstant, 4),
-                             code.make(code.OpConstant, 5),
-                             code.make(code.OpHash, 6),
-                             code.make(code.OpPop),
-                             )
+        ("{1:2, 3:4, 5:6}", (1, 2, 3, 4, 5, 6), (code.make(code.OpConstant, 0),
+                                                 code.make(code.OpConstant, 1),
+                                                 code.make(code.OpConstant, 2),
+                                                 code.make(code.OpConstant, 3),
+                                                 code.make(code.OpConstant, 4),
+                                                 code.make(code.OpConstant, 5),
+                                                 code.make(code.OpHash, 6),
+                                                 code.make(code.OpPop),
+                                                 )
          ),
         ("{1:2+3, 4: 5*6}", (1, 2, 3, 4, 5, 6), (code.make(code.OpConstant, 0),
                                                  code.make(code.OpConstant, 1),
@@ -284,7 +295,7 @@ def test_hash_literals():
                                                  code.make(code.OpPop),
                                                  )
          ),
-             ]
+    ]
     err = run_compiler_tests(cases)
     if err is not None:
         return err
@@ -293,8 +304,8 @@ def test_hash_literals():
 
 def test_index_expressions():
     cases = [
-        ("[1,2,3][1 + 1]", (1,2,3,1,1),
-            (
+        ("[1,2,3][1 + 1]", (1, 2, 3, 1, 1),
+         (
              code.make(code.OpConstant, 0),
              code.make(code.OpConstant, 1),
              code.make(code.OpConstant, 2),
@@ -304,17 +315,17 @@ def test_index_expressions():
              code.make(code.OpAdd),
              code.make(code.OpIndex),
              code.make(code.OpPop),
-            )
+         )
          ),
         ("{1:2}[2-1]", (1, 2, 2, 1), (code.make(code.OpConstant, 0),
-                                                 code.make(code.OpConstant, 1),
-                                                 code.make(code.OpHash, 2),
-                                                 code.make(code.OpConstant, 2),
-                                                 code.make(code.OpConstant, 3),
-                                                 code.make(code.OpSub),
-                                                 code.make(code.OpIndex),
-                                                 code.make(code.OpPop),
-                                                 )
+                                      code.make(code.OpConstant, 1),
+                                      code.make(code.OpHash, 2),
+                                      code.make(code.OpConstant, 2),
+                                      code.make(code.OpConstant, 3),
+                                      code.make(code.OpSub),
+                                      code.make(code.OpIndex),
+                                      code.make(code.OpPop),
+                                      )
          ),
     ]
     err = run_compiler_tests(cases)
@@ -325,22 +336,22 @@ def test_index_expressions():
 
 def test_functions():
     cases = [
-        ("fn() {return 5+10}", (5, 10, code.Instructions(b''.join([code.make(code.OpConstant, 0),
-                                        code.make(code.OpConstant, 1),
-                                        code.make(code.OpAdd),
-                                        code.make(code.OpReturnValue)]))),
+        ("fn() {return 5+10}", (5, 10, [code.make(code.OpConstant, 0),
+                                                                   code.make(code.OpConstant, 1),
+                                                                   code.make(code.OpAdd),
+                                                                   code.make(code.OpReturnValue)]),
          (code.make(code.OpClosure, 2, 0), code.make(code.OpPop))),
-        ("fn() {5+10}", (5, 10, code.Instructions(b''.join([code.make(code.OpConstant, 0),
-                                        code.make(code.OpConstant, 1),
-                                        code.make(code.OpAdd),
-                                        code.make(code.OpReturnValue)]))),
+        ("fn() {5+10}", (5, 10, [code.make(code.OpConstant, 0),
+                                                            code.make(code.OpConstant, 1),
+                                                            code.make(code.OpAdd),
+                                                            code.make(code.OpReturnValue)]),
          (code.make(code.OpClosure, 2, 0), code.make(code.OpPop))),
-        ("fn() {1;2}", (1, 2, code.Instructions(b''.join([code.make(code.OpConstant, 0),
-                                        code.make(code.OpPop),
-                                        code.make(code.OpConstant, 1),
-                                        code.make(code.OpReturnValue)]))),
+        ("fn() {1;2}", (1, 2, [code.make(code.OpConstant, 0),
+                                                          code.make(code.OpPop),
+                                                          code.make(code.OpConstant, 1),
+                                                          code.make(code.OpReturnValue)]),
          (code.make(code.OpClosure, 2, 0), code.make(code.OpPop))),
-        ("fn() {}", (code.Instructions(b''.join([code.make(code.OpReturn)])),),
+        ("fn() {}", ([code.make(code.OpReturn)],),
          (code.make(code.OpClosure, 0, 0), code.make(code.OpPop))),
     ]
     err = run_compiler_tests(cases)
@@ -390,14 +401,14 @@ def test_compiler_scopes():
 
 def test_function_calls():
     cases = [
-        ("fn() {24}();", (24, code.Instructions(b''.join([code.make(code.OpConstant, 0),
-                                              code.make(code.OpReturnValue)])),),
+        ("fn() {24}();", (24, [code.make(code.OpConstant, 0),
+                                                          code.make(code.OpReturnValue)],),
          (code.make(code.OpClosure, 1, 0),
           code.make(code.OpCall, 0),
           code.make(code.OpPop))),
         ("let noArg = fn() {24}; noArg();", (24, code.Instructions(b''.join([
-                                              code.make(code.OpConstant, 0),
-                                              code.make(code.OpReturnValue)])),),
+            code.make(code.OpConstant, 0),
+            code.make(code.OpReturnValue)])),),
          (code.make(code.OpClosure, 1, 0),
           code.make(code.OpSetGlobal, 0),
           code.make(code.OpGetGlobal, 0),
@@ -407,40 +418,40 @@ def test_function_calls():
         let oneArg = fn(a) { a;};
             oneArg(24);
         """,
-         (code.Instructions(b''.join([
+         ([
              code.make(code.OpGetLocal, 0),
-             code.make(code.OpReturnValue)])),24),
-             (
-              code.make(code.OpClosure, 0, 0),
-              code.make(code.OpSetGlobal, 0),
-              code.make(code.OpGetGlobal, 0),
-              code.make(code.OpConstant, 1),
-              code.make(code.OpCall, 1),
-              code.make(code.OpPop)
-             )
+             code.make(code.OpReturnValue)], 24),
+         (
+             code.make(code.OpClosure, 0, 0),
+             code.make(code.OpSetGlobal, 0),
+             code.make(code.OpGetGlobal, 0),
+             code.make(code.OpConstant, 1),
+             code.make(code.OpCall, 1),
+             code.make(code.OpPop)
+         )
          ),
         ("""
         let manyArg = fn(a, b, c) {a;b;c;};
             manyArg(24, 25, 26);
         """,
-         (code.Instructions(b''.join([
+         ([
              code.make(code.OpGetLocal, 0),
              code.make(code.OpPop),
              code.make(code.OpGetLocal, 1),
              code.make(code.OpPop),
              code.make(code.OpGetLocal, 2),
              code.make(code.OpReturnValue)
-            ])),24, 25, 26),
-             (
-              code.make(code.OpClosure, 0, 0),
-              code.make(code.OpSetGlobal, 0),
-              code.make(code.OpGetGlobal, 0),
-              code.make(code.OpConstant, 1),
-              code.make(code.OpConstant, 2),
-              code.make(code.OpConstant, 3),
-              code.make(code.OpCall, 3),
-              code.make(code.OpPop)
-             )
+         ], 24, 25, 26),
+         (
+             code.make(code.OpClosure, 0, 0),
+             code.make(code.OpSetGlobal, 0),
+             code.make(code.OpGetGlobal, 0),
+             code.make(code.OpConstant, 1),
+             code.make(code.OpConstant, 2),
+             code.make(code.OpConstant, 3),
+             code.make(code.OpCall, 3),
+             code.make(code.OpPop)
+         )
          ),
 
     ]
@@ -456,25 +467,25 @@ def test_let_statement_scopes():
         let num = 55;
         fn() { num }
         """,
-        (55, code.Instructions(b''.join([code.make(code.OpGetGlobal, 0),
-                                         code.make(code.OpReturnValue)])),),
-        (code.make(code.OpConstant, 0),
-         code.make(code.OpSetGlobal, 0),
-         code.make(code.OpClosure, 1, 0),
-         code.make(code.OpPop))),
+         (55, [code.make(code.OpGetGlobal, 0),
+                                          code.make(code.OpReturnValue)],),
+         (code.make(code.OpConstant, 0),
+          code.make(code.OpSetGlobal, 0),
+          code.make(code.OpClosure, 1, 0),
+          code.make(code.OpPop))),
         ("""
         fn() {
                 let num = 55;
                 num
             }
         """,
-        (55, code.Instructions(b''.join([
-            code.make(code.OpConstant, 0),
-            code.make(code.OpSetLocal, 0),
-            code.make(code.OpGetLocal, 0),
-            code.make(code.OpReturnValue)])),),
-        (code.make(code.OpClosure, 1, 0),
-         code.make(code.OpPop))),
+         (55, [
+             code.make(code.OpConstant, 0),
+             code.make(code.OpSetLocal, 0),
+             code.make(code.OpGetLocal, 0),
+             code.make(code.OpReturnValue)]),
+         (code.make(code.OpClosure, 1, 0),
+          code.make(code.OpPop))),
         ("""
         fn() {
                 let a = 55;
@@ -482,24 +493,25 @@ def test_let_statement_scopes():
                 a+b
             }
         """,
-        (55, 77,
-         code.Instructions(b''.join([
-            code.make(code.OpConstant, 0),
-            code.make(code.OpSetLocal, 0),
-            code.make(code.OpConstant, 1),
-            code.make(code.OpSetLocal, 1),
-            code.make(code.OpGetLocal, 0),
-            code.make(code.OpGetLocal, 1),
-            code.make(code.OpAdd),
-            code.make(code.OpReturnValue)])),),
-        (code.make(code.OpClosure, 2, 0),
-         code.make(code.OpPop))
+         (55, 77,
+          [
+              code.make(code.OpConstant, 0),
+              code.make(code.OpSetLocal, 0),
+              code.make(code.OpConstant, 1),
+              code.make(code.OpSetLocal, 1),
+              code.make(code.OpGetLocal, 0),
+              code.make(code.OpGetLocal, 1),
+              code.make(code.OpAdd),
+              code.make(code.OpReturnValue)],),
+         (code.make(code.OpClosure, 2, 0),
+          code.make(code.OpPop))
          ),
     ]
     err = run_compiler_tests(cases)
     if err is not None:
         return err
     return True
+
 
 def test_builtins():
     cases = [
@@ -509,15 +521,15 @@ def test_builtins():
         """,
          (1,),
          (code.make(code.OpGetBuiltin, 0),
-         code.make(code.OpArray, 0),
-         code.make(code.OpCall, 1),
-         code.make(code.OpPop),
-         code.make(code.OpGetBuiltin, 5),
-         code.make(code.OpArray, 0),
-         code.make(code.OpConstant, 0),
-         code.make(code.OpCall, 2),
-         code.make(code.OpPop),
-         )),
+          code.make(code.OpArray, 0),
+          code.make(code.OpCall, 1),
+          code.make(code.OpPop),
+          code.make(code.OpGetBuiltin, 5),
+          code.make(code.OpArray, 0),
+          code.make(code.OpConstant, 0),
+          code.make(code.OpCall, 2),
+          code.make(code.OpPop),
+          )),
         ("""
         fn() { len([]) }
         """,
@@ -526,8 +538,8 @@ def test_builtins():
              code.make(code.OpArray, 0),
              code.make(code.OpCall, 1),
              code.make(code.OpReturnValue),
-            ])),
-          ),
+         ])),
+         ),
          (code.make(code.OpClosure, 0, 0),
           code.make(code.OpPop)
           )
@@ -538,6 +550,116 @@ def test_builtins():
         return err
     return True
 
+
+def test_closure():
+    cases = [("""
+    fn(a) {
+                fn(b) {
+                    a+b
+                }
+            }
+    """,([
+           code.make(code.OpGetFree, 0),
+           code.make(code.OpGetLocal, 0),
+           code.make(code.OpAdd),
+           code.make(code.OpReturnValue),
+           ], [
+               code.make(OpGetLocal, 0),
+               code.make(OpClosure, 0, 1),
+               code.make(code.OpReturnValue),
+               ]
+           ),
+              (code.make(code.OpClosure, 1, 0),
+               code.make(code.OpPop)
+               )
+    ),
+             ("""
+             fn(a) {
+                fn(b) {
+                    fn(c) {
+                        a + b + c
+                    }
+                }
+            };
+             """, [[
+                     code.make(code.OpGetFree, 0),
+                     code.make(code.OpGetFree, 1),
+                     code.make(code.OpAdd),
+                     code.make(code.OpGetLocal, 0),
+                     code.make(code.OpAdd),
+                     code.make(code.OpReturnValue)
+                 ],
+                 [
+                     code.make(code.OpGetFree, 0),
+                     code.make(code.OpGetLocal, 0),
+                     code.make(code.OpClosure, 0, 2),
+                     code.make(code.OpReturnValue)
+                 ],
+                 [
+                     code.make(code.OpGetLocal, 0),
+                     code.make(code.OpClosure, 1, 1),
+                     code.make(code.OpReturnValue)
+                 ]
+             ],
+              (code.make(code.OpClosure, 2, 0),
+               code.make(code.OpPop)
+               )),
+             ("""
+             let global = 55;
+
+                fn() {
+                    let a = 66;
+    
+                    fn() {
+                        let b = 77;
+    
+                        fn() {
+                            let c = 88;
+    
+                            global + a + b + c;
+                        }
+                    }
+                }
+             """, [55,66,77,88,
+                   [
+                       code.make(code.OpConstant, 3),
+                       code.make(code.OpSetLocal, 0),
+                       code.make(code.OpGetGlobal, 0),
+                       code.make(code.OpGetFree, 0),
+                       code.make(code.OpAdd),
+                       code.make(code.OpGetFree, 1),
+                       code.make(code.OpAdd),
+                       code.make(code.OpGetLocal, 0),
+                       code.make(code.OpAdd),
+                       code.make(code.OpReturnValue),
+                 ],
+                 [
+                     code.make(code.OpConstant, 2),
+                     code.make(code.OpSetLocal, 0),
+                     code.make(code.OpGetFree, 0),
+                     code.make(code.OpGetLocal, 0),
+                     code.make(code.OpClosure, 4, 2),
+                     code.make(code.OpReturnValue),
+                 ],
+                 [
+                     code.make(code.OpConstant, 1),
+                     code.make(code.OpSetLocal, 0),
+                     code.make(code.OpGetLocal, 0),
+                     code.make(code.OpClosure, 5, 1),
+                     code.make(code.OpReturnValue),
+                 ]
+             ],
+              ( code.make(code.OpConstant, 0),
+                code.make(code.OpSetGlobal, 0),
+                code.make(code.OpClosure, 6, 0),
+                code.make(code.OpPop),
+               )
+              ),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
 
 
 if __name__ == '__main__':
@@ -554,7 +676,8 @@ if __name__ == '__main__':
         test_functions,
         test_function_calls,
         test_let_statement_scopes,
-        test_builtins
+        test_builtins,
+        test_closure
     ]
     test_util.run_cases(tests)
 

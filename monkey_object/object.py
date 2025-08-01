@@ -57,6 +57,7 @@ class Hashable(Object):
     def hash_key(self) -> HashKey:
         pass
 
+
 @dataclass
 class Integer(Hashable):
     value: int
@@ -307,8 +308,8 @@ class CompiledFunction(Object):
 
 @dataclass
 class Closure(Object):
-    fn: CompiledFunction
-    free: List[Object]
+    fn: CompiledFunction = None
+    free: List[Object] = None
 
     def type(self) -> str:
         return CLOSURE_OBJ

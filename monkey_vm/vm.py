@@ -31,8 +31,9 @@ class VM:
         self.global_variables = cast(List[object.Object], [None] * GLOBAL_SIZE)
         self.frame_index = 1
         self.frames = cast(List[frame.Frame], [None] * MAX_FRAMES)
-        self.frames[0] = frame.Frame(fn=object.CompiledFunction(instructions=bytecode.instructions),
-                                     base_pointer=0)
+        main_fn = object.CompiledFunction(instructions=bytecode.instructions)
+        main_closure = object.Closure(fn=main_fn)
+        self.frames[0] = frame.Frame(cl=main_closure, base_pointer=0)
 
     @staticmethod
     def new_with_global_state(bytecode: compiler.Bytecode, s: List[object.Object]):
@@ -151,6 +152,7 @@ class VM:
                 它会将函数执行时需要的值压栈和弹栈。
                 """
                 num_args = code.read_uint8(ins[ip+1:])
+                _ = code.read_uint8(ins[ip+3:])
                 self.current_frame().ip += 1
                 err = self.execute_call(num_args)
                 if err is not None:
@@ -187,28 +189,41 @@ class VM:
                 err = self.push(definition[1])
                 if err is not None:
                     return err
+            elif op == code.OpClosure:
+                const_index = code.read_uint16(ins[ip+1: ])
+                self.current_frame().ip += 3
+                err = self.push_closure(const_index)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
 
         return None
 
+    def push_closure(self, const_index: int):
+        constant = self.constants[const_index]
+        if not isinstance(constant, object.CompiledFunction):
+            return f"not a function: {constant}"
+        closure = object.Closure(fn=constant)
+        return self.push(closure)
+
     def execute_call(self, num_args: int):
         fn = self.stack[self.sp - 1 - num_args]
-        if isinstance(fn, object.CompiledFunction):
-            return self.call_function(fn, num_args)
+        if isinstance(fn, object.Closure):
+            return self.call_closure(fn, num_args)
         elif isinstance(fn, object.Builtin):
             return self.call_builtin(fn, num_args)
         else:
             return f"calling non-function and non-built-in"
 
-    def call_function(self, fn: object.CompiledFunction, num_args: int):
-        if num_args != fn.num_parameters:
-            return f"wrong number of arguments: want={fn.num_parameters}, got={num_args}"
-        frm = frame.Frame(fn=fn, base_pointer=self.sp - num_args)
+    def call_closure(self, cl: object.Closure, num_args: int):
+        if num_args != cl.fn.num_parameters:
+            return f"wrong number of arguments: want={cl.fn.num_parameters}, got={num_args}"
+        frm = frame.Frame(cl=cl, base_pointer=self.sp - num_args)
         self.push_frame(frm)
         # 栈中的空缺处就是要存储局部绑定的地方。
         # 执行函数之前栈指针的值，这是空缺的下边界
-        self.sp = frm.base_pointer + fn.num_locals
+        self.sp = frm.base_pointer + cl.fn.num_locals
         return None
 
     def call_builtin(self, builtin: object.Builtin, num_args: int):

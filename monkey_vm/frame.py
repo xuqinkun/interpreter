@@ -5,14 +5,14 @@ from monkey_object import object
 
 @dataclass
 class Frame:
-    fn: object.CompiledFunction
+    cl: object.Closure
     ip: int
     base_pointer: int
 
-    def __init__(self, fn: object.CompiledFunction, base_pointer: int):
-        self.fn = fn
+    def __init__(self, cl: object.Closure, base_pointer: int):
+        self.cl = cl
         self.ip = -1
         self.base_pointer = base_pointer
 
     def instructions(self) -> code.Instructions:
-        return self.fn.instructions
+        return self.cl.fn.instructions
