@@ -34,6 +34,7 @@ OpSetLocal = 26
 OpGetBuiltin = 27
 OpClosure = 28
 OpGetFree = 29
+OpCurrentClosure = 30
 
 
 @dataclass
@@ -71,6 +72,7 @@ definitions: Dict[Opcode, Definition] = {
     OpGetBuiltin: Definition(name="OpGetBuiltin", operand_widths=[1]),
     OpClosure: Definition(name="OpClosure", operand_widths=[2, 1]),
     OpGetFree: Definition(name="OpGetFree", operand_widths=[1]),
+    OpCurrentClosure: Definition(name="OpCurrentClosure", operand_widths=[]),
 }
 
 @dataclass

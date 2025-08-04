@@ -203,6 +203,11 @@ class VM:
                 err = self.push(current_closure.free[free_index])
                 if err is not None:
                     return err
+            elif op == code.OpCurrentClosure:
+                current_closure = self.current_frame().cl
+                err = self.push(current_closure)
+                if err is not None:
+                    return err
             else:
                 return f"unknown operator: {definition.name}"
 

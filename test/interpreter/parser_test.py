@@ -516,6 +516,21 @@ def test_parsing_macro_literal():
     return test_infix_expression(body_stmt.expression, "x", "+", "y")
 
 
+def test_function_literal_with_name():
+    code = "let myFunction = fn() {};"
+    program = parse(code)
+    if len(program.statements) != 1:
+        print(f"program.body does not contain 1 statement. got={len(program.statements)}")
+    stmt, ok = check_type(LetStatement, program.statements[0])
+    if not ok:
+        print(f"program.statements[0] is not LetStatement. got={type(program.statements[0])}")
+    func, ok = check_type(FunctionLiteral, stmt.value)
+    if not ok:
+        print(f"stmt.value is not FunctionLiteral. got={type(stmt.value)}")
+    if func.name != "myFunction":
+        print(f"function literal name wrong. want 'myFunction', got={func.name}")
+
+
 if __name__ == '__main__':
     cases = [
         test_let_statements,
@@ -536,5 +551,6 @@ if __name__ == '__main__':
         test_parsing_hash_literal_string_key,
         test_parsing_empty_hash_literal,
         test_parsing_macro_literal,
+        test_function_literal_with_name
     ]
     run_cases(cases)

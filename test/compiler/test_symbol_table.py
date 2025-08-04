@@ -201,6 +201,34 @@ def test_resolve_unresolvable_free():
             print(f"name {name} resolved, but was expected not to")
 
 
+def test_define_and_resolve_function_name():
+    global_st = SymbolTable()
+    global_st.define_function_name("a")
+    expected = Symbol(name="a", scope=FunctionScope, index=0)
+    result, ok = global_st.resolve(expected.name)
+    if not ok:
+        print(f"function name {expected.name} not resolvable")
+        return False
+    if result != expected:
+        print(f"expected {expected.name} to resolve to {expected}, got={result}")
+        return False
+    return True
+
+
+def test_shadowing_function_name():
+    global_st = SymbolTable()
+    global_st.define_function_name("a")
+
+    expected = Symbol(name="a", scope=FunctionScope, index=0)
+    result, ok = global_st.resolve(expected.name)
+    if not ok:
+        print(f"function name {expected.name} not resolvable")
+        return False
+    if result != expected:
+        print(f"expected {expected.name} to resolve to {expected} {result}")
+        return False
+    return True
+
 if __name__ == '__main__':
     if test_define():
         print("test define passed")
@@ -214,3 +242,7 @@ if __name__ == '__main__':
         print("test_resolve_free passed")
     if test_resolve_unresolvable_free():
         print("test_resolve_unresolvable_free() passed")
+    if test_define_and_resolve_function_name():
+        print("test_define_and_resolve_function_name() passed")
+    if test_shadowing_function_name():
+        print("test_shadowing_function_name() passed")

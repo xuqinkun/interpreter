@@ -350,6 +350,7 @@ class IFExpression(Expression):
 
 @dataclass
 class FunctionLiteral(Expression):
+    name: str=''
     token: Token = None
     parameters: list[Identifier] = None
     body: BlockStatement = None
@@ -366,14 +367,14 @@ class FunctionLiteral(Expression):
             for p in self.parameters:
                 params.append(p.string())
         param = ','.join(params)
-        return f"{self.token.literal}({param}) {{{self.body.string()}}}"
+        return f"{self.token.literal}{self.name}({param}) {{{self.body.string()}}}"
 
     def __repr__(self):
         return self.string()
 
     @classmethod
     def copy(cls, exp: Expression):
-        return cls(exp.token, exp.parameters, exp.body)
+        return cls(exp.name, exp.token, exp.parameters, exp.body)
 
 
 @dataclass

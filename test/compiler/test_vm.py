@@ -37,9 +37,16 @@ def run_vm_test(cases: List[Tuple[str, Union[int, str, List, Dict]]]):
         err = vm.run()
         if err is not None:
             print(f"vm error: {err}")
+            for i, constant in enumerate(comp.bytecode().constants):
+                if isinstance(constant, object.CompiledFunction):
+                    print(f"Instructions: {constant.instructions}")
+                elif isinstance(constant, object.Integer):
+                    print(f"Value: {constant.value}")
             return False
         stack_elem = vm.last_popped_stack_elem()
-        test_expected_object(expected, stack_elem)
+        err = test_expected_object(expected, stack_elem)
+        if err is not None:
+            print(err)
     return True
 
 
@@ -88,7 +95,34 @@ def test_expected_object(expected, actual: object.Object):
             return f"object is not error: {type(actual)} {actual}"
         if actual.message != expected.message:
             print(f"wrong error message. expected={expected.message} got={actual.message}")
-    return f"type not supported: {exp_type}"
+    elif exp_type == list:
+        if not isinstance(actual, object.Array):
+            print(f"object not array {type(actual)} {actual}")
+            return None
+        if len(expected) != len(actual.elements):
+            print(f"wrong num of elements. want={len(expected)}, got={actual.elements}")
+            return None
+        for i,exp_elem in enumerate(expected):
+            err = test_integer_object(exp_elem, actual.elements[i])
+            if err is not None:
+                print(f"testIntegerObject failed: {err}")
+                return None
+    elif exp_type == dict:
+        if not isinstance(actual, object.Hash):
+            print(f"object is not Hash. got={type(actual)} {actual}")
+            return None
+        if len(actual.pairs) != len(expected):
+            print(f"hash has wrong number of Pairs. want={len(expected)}, got={len(actual.pairs)}")
+            return None
+        for key, exp_val in expected.items():
+            if key not in actual.pairs:
+                print("no pair for given key in pairs")
+            err = test_integer_object(exp_val, actual.pairs[key].value)
+            if err is not None:
+                print(f"test_integer_object failed: {err}")
+                return None
+    else:
+        return f"type not supported: {exp_type}"
 
 
 def test_string_object(expected: str, actual: object.Object):
@@ -489,6 +523,53 @@ def test_closures():
         print('test_closures failed')
 
 
+def test_recursive_functions():
+    cases = [
+        ("""
+        let countDown = fn(x) {
+            if (x == 0) {
+                return 0;
+            } else {
+                countDown(x - 1);
+            }
+        };
+        countDown(1);
+        """,0),
+        ("""
+        let countDown = fn(x) {
+            if (x == 0) {
+                return 0;
+            } else {
+                countDown(x - 1);
+            }
+        };
+        let wrapper = fn() {
+            countDown(1);
+        };
+        wrapper();
+        """,0),
+        ("""
+        let wrapper = fn() {
+            let countDown = fn(x) {
+                if (x == 0) {
+                    return 0;
+                } else {
+                    countDown(x - 1);
+                }
+            };
+            countDown(1);
+        };
+        wrapper();
+        """,0),
+
+    ]
+    err = run_vm_test(cases)
+    if type(err) == bool and err == True:
+        print('test_recursive_functions accepted')
+    else:
+        print(f'test_recursive_functions failed: {err}')
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
@@ -506,3 +587,4 @@ if __name__ == '__main__':
     test_calling_functions_with_wrong_arguments()
     test_builtin_functions()
     test_closures()
+    test_recursive_functions()

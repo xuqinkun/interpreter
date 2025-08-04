@@ -90,6 +90,8 @@ class Parser:
             return None
         self.next_token()
         stmt.value = self.parse_expression(Precedence.LOWEST)
+        if isinstance(stmt.value, FunctionLiteral):
+            stmt.value.name = stmt.name.value
         if self.peek_token_is(SEMICOLON):
             self.next_token()
         return stmt

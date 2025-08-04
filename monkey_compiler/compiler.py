@@ -163,10 +163,10 @@ class Compiler:
                 if err is not None:
                     return err
         elif isinstance(node, ast.LetStatement):
+            symbol = self.symbol_table.define(node.name.value)
             err = self.compile(node.value)
             if err is not None:
                 return err
-            symbol = self.symbol_table.define(node.name.value)
             if symbol.scope == GlobalScope:
                 self.emit(code.OpSetGlobal, symbol.index)
             else:
@@ -206,6 +206,8 @@ class Compiler:
             self.emit(code.OpIndex)
         elif isinstance(node, ast.FunctionLiteral):
             self.enter_scope()
+            if node.name != "":
+                self.symbol_table.define_function_name(node.name)
             for p in node.parameters:
                 self.symbol_table.define(p.value)
             err = self.compile(node.body)
@@ -252,6 +254,8 @@ class Compiler:
             self.emit(code.OpGetBuiltin, symbol.index)
         elif symbol.scope == FreeScope:
             self.emit(code.OpGetFree, symbol.index)
+        elif symbol.scope == FunctionScope:
+            self.emit(code.OpCurrentClosure)
 
     def last_instruction_is(self, op: code.Opcode):
         if len(self.current_instructions()) == 0:

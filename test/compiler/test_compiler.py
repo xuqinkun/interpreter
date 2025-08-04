@@ -662,6 +662,61 @@ def test_closure():
     return True
 
 
+def test_recursive_functions():
+    cases = [
+        ("""
+        let countDown = fn(x) { countDown(x - 1); };
+            countDown(1);
+        """, [1, [code.make(code.OpCurrentClosure),
+                    code.make(code.OpGetLocal, 0),
+                    code.make(code.OpConstant, 0),
+                    code.make(code.OpSub),
+                    code.make(code.OpCall, 1),
+                    code.make(code.OpReturnValue),]
+              ,1],
+         [code.make(code.OpClosure, 1, 0),
+                code.make(code.OpSetGlobal, 0),
+                code.make(code.OpGetGlobal, 0),
+                code.make(code.OpConstant, 2),
+                code.make(code.OpCall, 1),
+                code.make(code.OpPop),
+          ]
+         ),
+        ("""
+        let wrapper = fn() {
+                let countDown = fn(x) { countDown(x - 1); };
+                countDown(1);
+            };
+            wrapper();
+        """, [1, [
+            code.make(code.OpCurrentClosure),
+            code.make(code.OpGetLocal, 0),
+            code.make(code.OpConstant, 0),
+            code.make(code.OpSub),
+            code.make(code.OpCall, 1),
+            code.make(code.OpReturnValue),
+        ]
+              ,1, [code.make(code.OpClosure, 1, 0),
+                    code.make(code.OpSetLocal, 0),
+                    code.make(code.OpGetLocal, 0),
+                    code.make(code.OpConstant, 2),
+                    code.make(code.OpCall, 1),
+                    code.make(code.OpReturnValue),]],
+         [
+             code.make(code.OpClosure, 3, 0),
+             code.make(code.OpSetGlobal, 0),
+             code.make(code.OpGetGlobal, 0),
+             code.make(code.OpCall, 0),
+             code.make(code.OpPop),
+          ]
+         ),
+    ]
+    err = run_compiler_tests(cases)
+    if err is not None:
+        return err
+    return True
+
+
 if __name__ == '__main__':
     test_compiler_scopes()
     tests = [
@@ -677,7 +732,8 @@ if __name__ == '__main__':
         test_function_calls,
         test_let_statement_scopes,
         test_builtins,
-        test_closure
+        test_closure,
+        test_recursive_functions
     ]
     test_util.run_cases(tests)
 

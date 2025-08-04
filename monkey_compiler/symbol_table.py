@@ -5,6 +5,7 @@ GlobalScope = "GLOBAL"
 LocalScope = "LOCAL"
 BuiltinScope = "BUILTIN"
 FreeScope = "FREE"
+FunctionScope = "FUNCTION"
 
 @dataclass
 class Symbol:
@@ -58,6 +59,11 @@ class SymbolTable:
         symbol = Symbol(name=original.name, index=len(self.free_symbols) - 1)
         symbol.scope = FreeScope
         self.store[original.name] = symbol
+        return symbol
+
+    def define_function_name(self, name: str):
+        symbol = Symbol(name=name, index=0, scope=FunctionScope)
+        self.store[name] = symbol
         return symbol
 
     @staticmethod
