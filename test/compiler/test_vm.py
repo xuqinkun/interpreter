@@ -570,6 +570,30 @@ def test_recursive_functions():
         print(f'test_recursive_functions failed: {err}')
 
 
+def test_recursive_fibonacci():
+    cases = [
+        ("""
+        let fibonacci = fn(x) {
+            if (x == 0) {
+                return 0;
+            } else {
+                if (x == 1) {
+                    return 1;
+                } else {
+                    fibonacci(x - 1) + fibonacci(x - 2);
+                }
+            }
+        };
+        fibonacci(15);
+        """, 610)
+    ]
+    err = run_vm_test(cases)
+    if type(err) == bool and err == True:
+        print('test_recursive_fibonacci accepted')
+    else:
+        print(f'test_recursive_fibonacci failed: {err}')
+
+
 if __name__ == '__main__':
     test_integer_arithmetic()
     test_boolean_expressions()
@@ -588,3 +612,4 @@ if __name__ == '__main__':
     test_builtin_functions()
     test_closures()
     test_recursive_functions()
+    test_recursive_fibonacci()
